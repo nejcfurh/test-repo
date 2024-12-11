@@ -15,7 +15,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0 # Ensures full history, tags, and commits are available
+          fetch-depth: 0
 
       - name: Release Please
         uses: googleapis/release-please-action@v3.4.0
@@ -23,7 +23,7 @@ jobs:
           token: ${{ secrets.ORG_GITHUB_WRITE_TOKEN }}
           release-type: simple
           default-branch: main
-          bump-minor-pre-major: true # Allows minor bumps on pre-major versions
+          bump-minor-pre-major: true
           changelog-types: |
             [
               {
