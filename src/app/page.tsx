@@ -21,7 +21,8 @@ export default function Home() {
             .
           </li>
           <li>
-            Save and see your changes instantly. Its still not working. WTF!
+            Save and see your changes instantly. Its still not working. Fuck
+            this!
           </li>
         </ol>
 
