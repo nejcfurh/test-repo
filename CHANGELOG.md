@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.0](https://github.com/nejcfurh/test-repo/compare/v1.3.0...v1.4.0) (2024-12-11)
+
+
+### ✨ Features
+
+* **web:** fixed the type ([906abb9](https://github.com/nejcfurh/test-repo/commit/906abb9a914f422bfe37da01680f9c1b346b9d2d))
+* **web:** will this work? ([e0536cb](https://github.com/nejcfurh/test-repo/commit/e0536cb997b56a8d189c71d216e099c2001bdd81))
+
 ## [1.3.0](https://github.com/nejcfurh/test-repo/compare/test-repo-v1.2.4...test-repo-v1.3.0) (2024-12-11)
 
 
