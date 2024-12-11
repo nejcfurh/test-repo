@@ -1,11 +1,14 @@
 name: Release Please
 
 on:
+  push:
+    branches:
+      - develop
+      - main
   pull_request:
     branches:
       - develop
-    types:
-      - closed
+      - main
 
 permissions:
   contents: write
