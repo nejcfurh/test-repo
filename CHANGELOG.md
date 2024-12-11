@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.1](https://github.com/nejcfurh/test-repo/compare/v1.4.0...v1.4.1) (2024-12-11)
+
+
+### 🐛 Bugfixes
+
+* **web:** seeing how it goes ([ded633c](https://github.com/nejcfurh/test-repo/commit/ded633c1e89f165578136760de356e53485a0fe2))
+
 ## [1.4.0](https://github.com/nejcfurh/test-repo/compare/v1.3.0...v1.4.0) (2024-12-11)
 
 
