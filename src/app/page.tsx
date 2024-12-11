@@ -20,7 +20,9 @@ export default function Home() {
             </code>
             .
           </li>
-          <li>Save and see your changes instantly. Still not working, fuck!</li>
+          <li>
+            Save and see your changes instantly. I dont know what else to do...
+          </li>
         </ol>
 
         <div className="flex gap-4 items-center flex-col sm:flex-row">
