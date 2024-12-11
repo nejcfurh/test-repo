@@ -21,7 +21,7 @@ jobs:
         run: |
           git fetch --tags
           git checkout develop
-          git pull origin main --tags # Pull latest tags from main into develop
+          git pull --ff-only origin main --tags
 
       - name: Release Please
         uses: googleapis/release-please-action@v3.4.0
