@@ -14,6 +14,14 @@ jobs:
         with:
           fetch-depth: 0 # Ensures full history, tags, and commits are available
 
+      - name: Log Git Commit History
+        run: |
+          echo "=== Last 10 commits ==="
+          git log --oneline -10
+
+          echo "=== All Tags ==="
+          git tag -l
+
       - name: Release Please
         uses: googleapis/release-please-action@v3.4.0
         with:
