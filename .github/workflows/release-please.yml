@@ -20,10 +20,10 @@ jobs:
       - name: Release Please
         uses: googleapis/release-please-action@v3.4.0
         with:
-          token: ${{ secrets.ORG_GITHUB_WRITE_TOKEN }} # Use a Personal Access Token for tagging
-          release-type: node # Uses semantic versioning (not "simple")
-          default-branch: main # The branch where tags and releases will be created
-          branch-name: release-please--develop-to-main # Release PR branch name
+          token: ${{ secrets.ORG_GITHUB_WRITE_TOKEN }}
+          release-type: node
+          default-branch: main
+          package-name: 'Web'
           bump-minor-pre-major: true # Allows minor bumps on pre-major versions
           changelog-types: |
             [
