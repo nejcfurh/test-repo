@@ -17,7 +17,8 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0 # to get tag information
+          fetch-depth: 0 # Ensures full history, tags, and commits are available
+
 
       - name: Release Please # on develop branch with tags from main
         uses: googleapis/release-please-action@v4
