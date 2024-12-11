@@ -1,19 +1,29 @@
 name: Release Please
+
 on:
-  push:
+  pull_request:
     branches:
       - develop
+    types:
+      - closed
 
 jobs:
   release-please:
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
-      - uses: GoogleCloudPlatform/release-please-action@v2
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # Ensures full history, tags, and commits are available
+
+      - name: Release Please
+        uses: googleapis/release-please-action@v3.4.0
         with:
           token: ${{ secrets.ORG_GITHUB_WRITE_TOKEN }}
           release-type: simple
           default-branch: main
-          bump-minor-pre-major: Yes
+          bump-minor-pre-major: true # Allows minor bumps on pre-major versions
           changelog-types: |
             [
               {
