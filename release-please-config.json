@@ -2,7 +2,7 @@
   "packages": {
     ".": {
       "changelog-path": "CHANGELOG.md",
-      "release-type": "node",
+      "release-type": "simple",
       "prerelease": false,
       "include-v-in-tag": true,
       "pull-request-header": "Release Web App to Production 🚀"
