@@ -25,7 +25,7 @@ jobs:
         uses: googleapis/release-please-action@v4
         with:
           token: ${{ secrets.ORG_GITHUB_WRITE_TOKEN }}
-          release-type: simple
+          release-type: node
           target-branch: main
           changelog-types: |
             [
