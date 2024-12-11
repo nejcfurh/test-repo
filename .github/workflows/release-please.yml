@@ -26,7 +26,6 @@ jobs:
           bump-minor-pre-major: true
           default-branch: main
           fork: true
-          release-as: 1.3.0
           changelog-types: |
             [
               {
