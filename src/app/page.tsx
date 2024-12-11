@@ -22,7 +22,7 @@ export default function Home() {
           </li>
           <li>
             Save and see your changes instantly. Wtf, will it work? No, fuck
-            this! Fuck this!
+            this! Fuck this! Fuck this?
           </li>
         </ol>
 

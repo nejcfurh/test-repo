@@ -5,7 +5,7 @@
       "release-type": "node",
       "prerelease": false,
       "include-v-in-tag": true,
-      "pull-request-header": "Release {{version}} 🚀 ",
+      "pull-request-header": "Web Release 🚀 ",
       "bump-minor-pre-major": true,
       "include-component-in-tag": false
     }
