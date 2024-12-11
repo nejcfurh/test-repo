@@ -1,11 +1,13 @@
 name: Release Please
 
+permissions:
+  contents: write
+  pull-requests: write
+
 on:
   pull_request:
     branches:
       - develop
-    types:
-      - closed
 
 jobs:
   release-please:
@@ -18,63 +20,8 @@ jobs:
           fetch-depth: 0 # to get tag information
 
       - name: Release Please # on develop branch with tags from main
-        uses: googleapis/release-please-action@v3.4.0
+        uses: googleapis/release-please-action@v4
         with:
           token: ${{ secrets.ORG_GITHUB_WRITE_TOKEN }}
           release-type: simple
-          bump-minor-pre-major: true
-          default-branch: main
-          changelog-types: |
-            [
-              {
-                "type": "feat",
-                "section": "Features"
-              },
-              {
-                "type": "fix",
-                "section": "Bug Fixes"
-              },
-              {
-                "type": "perf",
-                "section": "Performance Improvements"
-              },
-              {
-                "type": "revert",
-                "section": "Reverts"
-              },
-              {
-                "type": "docs",
-                "section": "Documentation",
-                "hidden": true
-              },
-              {
-                "type": "style",
-                "section": "Styles",
-                "hidden": true
-              },
-              {
-                "type": "chore",
-                "section": "Miscellaneous Chores",
-                "hidden": true
-              },
-              {
-                "type": "refactor",
-                "section": "Code Refactoring",
-                "hidden": true
-              },
-              {
-                "type": "test",
-                "section": "Tests",
-                "hidden": true
-              },
-              {
-                "type": "build",
-                "section": "Build System",
-                "hidden": true
-              },
-              {
-                "type": "ci",
-                "section": "Continuous Integration",
-                "hidden": true
-              }
-            ]
+          target-branch: main
