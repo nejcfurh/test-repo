@@ -24,7 +24,6 @@ jobs:
           release-type: simple
           bump-minor-pre-major: true
           default-branch: main
-          fork: true
           changelog-types: |
             [
               {
