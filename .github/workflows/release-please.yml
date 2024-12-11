@@ -1,12 +1,15 @@
 name: Release Please
 
 on:
-  push:
+  pull_request:
     branches:
       - develop
+    types:
+      - closed
 
 jobs:
   release-please:
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -16,8 +19,8 @@ jobs:
 
       - name: Log Git Commit History
         run: |
-          echo "=== Last 10 commits ==="
-          git log --oneline -10
+          echo "=== Last 20 commits ==="
+          git log --oneline -20
 
           echo "=== All Tags ==="
           git tag -l
