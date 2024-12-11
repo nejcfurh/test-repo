@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.5.0](https://github.com/nejcfurh/test-repo/compare/v1.4.1...v1.5.0) (2024-12-11)
+
+
+### ✨ Features
+
+* **web:** fucking hell ([8fd47c0](https://github.com/nejcfurh/test-repo/commit/8fd47c0e5caf09f8ff7221797e5bdf3ac8c57c96))
+* **web:** let's see now ([1549c38](https://github.com/nejcfurh/test-repo/commit/1549c3890d2b652917c7fa883eeef916eddbb1f2))
+* **web:** new feature ([d198596](https://github.com/nejcfurh/test-repo/commit/d19859676e51c8d91108d4c1b3d3d2c0e81b8bb7))
+
+
+### 🐛 Bugfixes
+
+* **web:** ho ho ho ([bcaba3c](https://github.com/nejcfurh/test-repo/commit/bcaba3c41f1e8a53ec73bee1ea5ab93dde26b0aa))
+* **web:** lets see ([90e1438](https://github.com/nejcfurh/test-repo/commit/90e143809facec06808961932744e4d0d5fc72df))
+* **web:** lets see ([9494501](https://github.com/nejcfurh/test-repo/commit/94945018f694ddac888360103638f96b62ccd944))
+* **web:** letsee ([362e40a](https://github.com/nejcfurh/test-repo/commit/362e40aac1695f2fb22eba30350cd8629917fc1b))
+* **web:** not sure what happened ([d3bb3dd](https://github.com/nejcfurh/test-repo/commit/d3bb3ddaead3f366863ae95b92d1bf929efb20c8))
+* **web:** release please ([3389fa8](https://github.com/nejcfurh/test-repo/commit/3389fa89343b49671f4e7a15b681f58fe69dea3d))
+* **web:** Spellcheck ([b63f0e6](https://github.com/nejcfurh/test-repo/commit/b63f0e654dd806fd5616ed158942f49c010d67c8))
+* **web:** sreeer ([795fdea](https://github.com/nejcfurh/test-repo/commit/795fdea144418df50f871d8abfbd536f072f197d))
+
 ## [1.4.1](https://github.com/nejcfurh/test-repo/compare/v1.4.0...v1.4.1) (2024-12-11)
 
 
