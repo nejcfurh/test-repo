@@ -19,12 +19,11 @@ jobs:
       - name: Checkout Full Repository with Tags
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0 # Fetch entire commit history and all tags
+          fetch-depth: 0
 
-      - name: Get Latest Tag from the repository
+      - name: Get Latest Tag
         id: get_latest_tag
         run: |
-          # Get the latest tag from the main branch
           LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
           if [ -z "$LATEST_TAG" ]; then
             echo "No tags found, defaulting to v0.0.0"
@@ -33,40 +32,12 @@ jobs:
           echo "Latest tag from main is: $LATEST_TAG"
           echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
 
-      - name: Create New Tag from Latest Tag
-        id: create_new_tag
-        run: |
-          # Extract the major, minor, and patch numbers from the latest tag
-          MAJOR=$(echo ${{ steps.get_latest_tag.outputs.latest_tag }} | grep -oE '[0-9]+' | sed -n 1p)
-          MINOR=$(echo ${{ steps.get_latest_tag.outputs.latest_tag }} | grep -oE '[0-9]+' | sed -n 2p)
-          PATCH=$(echo ${{ steps.get_latest_tag.outputs.latest_tag }} | grep -oE '[0-9]+' | sed -n 3p)
-
-          # Increment the patch version
-          NEW_PATCH=$((PATCH + 1))
-          NEW_TAG="v${MAJOR}.${MINOR}.${NEW_PATCH}"
-
-          echo "New tag to be created: $NEW_TAG"
-          echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
-
-      - name: Create Git Tag
-        run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
-          git tag ${{ steps.create_new_tag.outputs.new_tag }}
-          git push origin ${{ steps.create_new_tag.outputs.new_tag }}
-
-      - name: Create GitHub Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.ORG_GITHUB_WRITE_TOKEN }}
-        run: |
-          curl -X POST \
-            -H "Authorization: Bearer $GITHUB_TOKEN" \
-            -H "Content-Type: application/json" \
-            -d '{
-              "tag_name": "${{ steps.create_new_tag.outputs.new_tag }}",
-              "name": "Release ${{ steps.create_new_tag.outputs.new_tag }}",
-              "body": "This release was automatically created with changes from develop.",
-              "draft": false,
-              "prerelease": false
-            }' \
-            https://api.github.com/repos/${{ github.repository }}/releases
+      - name: Create PR from Develop to Main
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.ORG_GITHUB_WRITE_TOKEN }}
+          branch: develop
+          base: main
+          title: 'Release PR for production'
+          body: |
+            This PR merges changes from develop to main for production release.
