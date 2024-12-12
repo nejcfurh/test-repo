@@ -52,14 +52,14 @@ jobs:
           OTHERS=""
 
           while IFS= read -r line; do
-            if [[ "$line" == *"feat:"* ]]; then
-              FEATURES+="- $(echo $line | sed 's/^feat: //')\n"
-            elif [[ "$line" == *"fix:"* ]]; then
-              FIXES+="- $(echo $line | sed 's/^fix: //')\n"
-            elif [[ "$line" == *"chore:"* ]]; then
-              CHORES+="- $(echo $line | sed 's/^chore: //')\n"
-            elif [[ "$line" == *"ci:"* ]]; then
-              CI+="- $(echo $line | sed 's/^ci: //')\n"
+            if [[ "$line" == *"feat(web):"* ]]; then
+              FEATURES+="- $(echo $line | sed 's/^feat(web): //')\n"
+            elif [[ "$line" == *"fix(web):"* ]]; then
+              FIXES+="- $(echo $line | sed 's/^fix(web): //')\n"
+            elif [[ "$line" == *"chore(web):"* ]]; then
+              CHORES+="- $(echo $line | sed 's/^chore(web): //')\n"
+            elif [[ "$line" == *"ci(web):"* ]]; then
+              CI+="- $(echo $line | sed 's/^ci(web): //')\n"
             else
               OTHERS+="- $line\n"
             fi
@@ -68,43 +68,62 @@ jobs:
           CHANGELOG=""
 
           if [ -n "$FEATURES" ]; then
-            CHANGELOG+="## ✨ Features\n$FEATURES\n"
+            CHANGELOG+="## ✨  Features\n$FEATURES\n"
           fi
           if [ -n "$FIXES" ]; then
-            CHANGELOG+="## 🐛 Fixes\n$FIXES\n"
+            CHANGELOG+="## 🐛  Fixes\n$FIXES\n"
           fi
           if [ -n "$CHORES" ]; then
             CHANGELOG+="## 🛠️ Chores\n$CHORES\n"
           fi
           if [ -n "$CI" ]; then
-            CHANGELOG+="## 🚀 CI Changes\n$CI\n"
+            CHANGELOG+="## 📦  CI Changes\n$CI\n"
           fi
           if [ -n "$OTHERS" ]; then
-            CHANGELOG+="## 📦 Other Changes\n$OTHERS\n"
+            CHANGELOG+="## 📦  Other Changes\n$OTHERS\n"
           fi
 
           echo "Changelog:\n$CHANGELOG"
           echo "changelog=$CHANGELOG" >> $GITHUB_OUTPUT
 
-      - name: Determine Version Bump
+      - name: Determine Version Bump (Major, Minor, Patch)
         id: determine_bump
         run: |
-          # Logic to determine if the version bump should be major, minor, or patch
-          # For simplicity, let's assume we always bump the patch version
-          echo "major=false" >> $GITHUB_OUTPUT
-          echo "minor=false" >> $GITHUB_OUTPUT
-          echo "patch=true" >> $GITHUB_OUTPUT
+          MAJOR=0
+          MINOR=0
+          PATCH=0
+
+          while IFS= read -r line; do
+            if [[ "$line" == *"BREAKING CHANGE"* ]]; then
+              MAJOR=$((MAJOR + 1))
+            elif [[ "$line" == *"feat:"* ]]; then
+              MINOR=$((MINOR + 1))
+            elif [[ "$line" == *"fix:"* ]]; then
+              PATCH=$((PATCH + 1))
+            fi
+          done < <(jq -r '.[].commit.message' commits.json)
+
+          if [ $MAJOR -gt 0 ]; then
+            echo "major=true" >> $GITHUB_OUTPUT
+          elif [ $MINOR -gt 0 ]; then
+            echo "minor=true" >> $GITHUB_OUTPUT
+          elif [ $PATCH -gt 0 ]; then
+            echo "patch=true" >> $GITHUB_OUTPUT
+          fi
 
       - name: Increment Version
         id: increment_version
         run: |
           LATEST_TAG="${{ steps.get_latest_tag.outputs.latest_tag }}"
-          VERSION="${LATEST_TAG#v}" # Remove 'v' from v1.7.11 to get 1.7.11
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION" # Split the version into MAJOR, MINOR, and PATCH
+          VERSION="${LATEST_TAG#v}"
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
 
-          echo "Current version: MAJOR=$MAJOR, MINOR=$MINOR, PATCH=$PATCH"
+          if [ -z "$MAJOR" ] || [ -z "$MINOR" ] || [ -z "$PATCH" ]; then
+            MAJOR=0
+            MINOR=0
+            PATCH=0
+          fi
 
-          # Check for version bump logic (Major > Minor > Patch)
           if [ "${{ steps.determine_bump.outputs.major }}" == "true" ]; then
             MAJOR=$((MAJOR + 1))
             MINOR=0
@@ -124,8 +143,12 @@ jobs:
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
-          git tag ${{ steps.increment_version.outputs.new_tag }}
-          git push origin ${{ steps.increment_version.outputs.new_tag }}
+          if git rev-parse "refs/tags/${{ steps.increment_version.outputs.new_tag }}" >/dev/null 2>&1; then
+            echo "Tag ${{ steps.increment_version.outputs.new_tag }} already exists, skipping tag creation."
+          else
+            git tag ${{ steps.increment_version.outputs.new_tag }}
+            git push origin ${{ steps.increment_version.outputs.new_tag }}
+          fi
 
       - name: Create GitHub Release
         env:
@@ -143,6 +166,17 @@ jobs:
             }' \
             https://api.github.com/repos/${{ github.repository }}/releases
 
+      - name: Check for Existing PR
+        env:
+          GITHUB_TOKEN: ${{ secrets.ORG_GITHUB_WRITE_TOKEN }}
+        run: |
+          PR_RESPONSE=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls?state=open&base=main&head=develop")
+          PR_COUNT=$(echo "$PR_RESPONSE" | jq '. | length')
+          if [ "$PR_COUNT" -gt 0 ]; then
+            exit 0
+          fi
+
       - name: Create Pull Request from Develop to Main
         env:
           GITHUB_TOKEN: ${{ secrets.ORG_GITHUB_WRITE_TOKEN }}
@@ -151,7 +185,7 @@ jobs:
             -H "Authorization: Bearer $GITHUB_TOKEN" \
             -H "Content-Type: application/json" \
             -d '{
-              "title": "Release ${{ steps.increment_version.outputs.new_tag }}",
+              "title": "🚀  Release ${{ steps.increment_version.outputs.new_tag }}",
               "head": "develop",
               "base": "main",
               "body": "${{ steps.generate_changelog.outputs.changelog }}"
