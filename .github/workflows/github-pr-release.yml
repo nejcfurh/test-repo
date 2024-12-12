@@ -89,9 +89,9 @@ jobs:
       - name: Determine Version Bump (Major, Minor, Patch)
         id: determine_bump
         run: |
-          MAJOR=0
-          MINOR=0
-          PATCH=0
+          MAJOR=00
+          MINOR=00
+          PATCH=00
 
           while IFS= read -r line; do
             if [[ "$line" == *"BREAKING CHANGE"* ]]; then
@@ -119,18 +119,18 @@ jobs:
           IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
 
           if [ -z "$MAJOR" ] || [ -z "$MINOR" ] || [ -z "$PATCH" ]; then
-            MAJOR=0
-            MINOR=0
-            PATCH=0
+            MAJOR=00
+            MINOR=00
+            PATCH=00
           fi
 
           if [ "${{ steps.determine_bump.outputs.major }}" == "true" ]; then
             MAJOR=$((MAJOR + 1))
-            MINOR=0
-            PATCH=0
+            MINOR=00
+            PATCH=00
           elif [ "${{ steps.determine_bump.outputs.minor }}" == "true" ]; then
             MINOR=$((MINOR + 1))
-            PATCH=0
+            PATCH=00
           elif [ "${{ steps.determine_bump.outputs.patch }}" == "true" ]; then
             PATCH=$((PATCH + 1))
           fi
