@@ -58,8 +58,8 @@ jobs:
               FIXES+="- $(echo $line | sed 's/^fix(web): //')\n"
             elif [[ "$line" == *"chore(web):"* ]]; then
               CHORES+="- $(echo $line | sed 's/^chore(web): //')\n"
-            elif [[ "$line" == *"ci:"* ]]; then
-              CI+="- $(echo $line | sed 's/^ci: //')\n"
+            elif [[ "$line" == *"ci(web):"* ]]; then
+              CI+="- $(echo $line | sed 's/^ci(web): //')\n"
             else
               OTHERS+="- $line\n"
             fi
@@ -68,19 +68,19 @@ jobs:
           CHANGELOG=""
 
           if [ -n "$FEATURES" ]; then
-            CHANGELOG+="## ✨ Features\n$FEATURES\n"
+            CHANGELOG+="## ✨  Features\n$FEATURES\n"
           fi
           if [ -n "$FIXES" ]; then
-            CHANGELOG+="## 🐛 Fixes\n$FIXES\n"
+            CHANGELOG+="## 🐛  Fixes\n$FIXES\n"
           fi
           if [ -n "$CHORES" ]; then
-            CHANGELOG+="## 🛠️ Chores\n$CHORES\n"
+            CHANGELOG+="## 🛠️  Chores\n$CHORES\n"
           fi
           if [ -n "$CI" ]; then
-            CHANGELOG+="## 🚀 CI Changes\n$CI\n"
+            CHANGELOG+="## 📦  CI Changes\n$CI\n"
           fi
           if [ -n "$OTHERS" ]; then
-            CHANGELOG+="## 📦 Other Changes\n$OTHERS\n"
+            CHANGELOG+="## 📦  Other Changes\n$OTHERS\n"
           fi
 
           echo "Changelog:\n$CHANGELOG"
@@ -118,8 +118,8 @@ jobs:
         run: |
           LATEST_TAG="${{ steps.get_latest_tag.outputs.latest_tag }}"
           MAJOR=$(echo $LATEST_TAG | grep -oE '[0-9]+' | sed -n 1p)
-          MINOR=$(echo $LATEST_TAG | grep -oE '[0-99]+' | sed -n 2p)
-          PATCH=$(echo $LATEST_TAG | grep -oE '[0-99]+' | sed -n 3p)
+          MINOR=$(echo $LATEST_TAG | grep -oE '[0-9]+' | sed -n 2p)
+          PATCH=$(echo $LATEST_TAG | grep -oE '[0-9]+' | sed -n 3p)
 
           if [ "${{ steps.determine_bump.outputs.major }}" == "true" ]; then
             MAJOR=$((MAJOR + 1))
@@ -136,6 +136,29 @@ jobs:
           echo "New version: $NEW_TAG"
           echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
 
+      - name: Create Git Tag
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git tag ${{ steps.increment_version.outputs.new_tag }}
+          git push origin ${{ steps.increment_version.outputs.new_tag }}
+
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.ORG_GITHUB_WRITE_TOKEN }}
+        run: |
+          curl -X POST \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "tag_name": "${{ steps.increment_version.outputs.new_tag }}",
+              "name": "Release ${{ steps.increment_version.outputs.new_tag }}",
+              "body": "${{ steps.generate_changelog.outputs.changelog }}",
+              "draft": false,
+              "prerelease": false
+            }' \
+            https://api.github.com/repos/${{ github.repository }}/releases
+
       - name: Create Pull Request from Develop to Main
         env:
           GITHUB_TOKEN: ${{ secrets.ORG_GITHUB_WRITE_TOKEN }}
@@ -144,9 +167,9 @@ jobs:
             -H "Authorization: Bearer $GITHUB_TOKEN" \
             -H "Content-Type: application/json" \
             -d '{
-              "title": "Release ${{ steps.increment_version.outputs.new_tag }}",
+              "title": "🚀 Release ${{ steps.increment_version.outputs.new_tag }}",
               "head": "develop",
               "base": "main",
-              "body": "This PR merges changes from develop to main for production release.\n\n${{ steps.generate_changelog.outputs.changelog }}"
+              "body": "${{ steps.generate_changelog.outputs.changelog }}"
             }' \
             https://api.github.com/repos/${{ github.repository }}/pulls
