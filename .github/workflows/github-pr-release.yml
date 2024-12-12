@@ -22,4 +22,3 @@ jobs:
           token: ${{ secrets.ORG_GITHUB_WRITE_TOKEN }}
           production-branch: main
           staging-branch: develop
-          label: Release
