@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.5.1](https://github.com/nejcfurh/test-repo/compare/v1.5.0...v1.5.1) (2024-12-12)
+
+
+### 🐛 Bugfixes
+
+* **web:** check new action ([b36e725](https://github.com/nejcfurh/test-repo/commit/b36e725ecb44295677a08d376e4654f6a27ffb56))
+* **web:** check new token ([5854657](https://github.com/nejcfurh/test-repo/commit/58546570680f38b8ecb9bae66625beab155afbee))
+* **web:** github action test ([400be04](https://github.com/nejcfurh/test-repo/commit/400be04124097a2974637aa06a3fe525f953daff))
+* **web:** lol ([6305326](https://github.com/nejcfurh/test-repo/commit/63053265b017eda5f317cc58bbc1f4dd795d7401))
+* **web:** new check ([4170033](https://github.com/nejcfurh/test-repo/commit/417003396d3c6818c18d118dd399a67d67e6eae4))
+* **web:** sadsad ([6e3ba04](https://github.com/nejcfurh/test-repo/commit/6e3ba040c164c66d3477f151cc71d78019d6e7cf))
+* **web:** sdasdas ([bab4542](https://github.com/nejcfurh/test-repo/commit/bab45425c44fcdc74e06887b9816e866f1912efc))
+* **web:** testing ([2df63c1](https://github.com/nejcfurh/test-repo/commit/2df63c186210249259e6a485f32302a60a1b9d16))
+* **web:** testing peter-evans ([4db61e5](https://github.com/nejcfurh/test-repo/commit/4db61e5340394c59c08ae55f3f63fc21e9fad1f3))
+* **web:** try this ([186e36e](https://github.com/nejcfurh/test-repo/commit/186e36e8ed8fadcdc4054a73016ddcf47c35187f))
+* **web:** we need this ([35b6541](https://github.com/nejcfurh/test-repo/commit/35b6541e4b56a9529448877c6e7818fe04ead61b))
+
 ## [1.5.0](https://github.com/nejcfurh/test-repo/compare/v1.4.1...v1.5.0) (2024-12-11)
 
 
