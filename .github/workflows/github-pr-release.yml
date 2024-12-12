@@ -36,8 +36,8 @@ jobs:
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.ORG_GITHUB_WRITE_TOKEN }}
-          branch: develop
-          base: main
+          branch: main
+          base: develop
           title: 'Release PR for production'
           body: |
             This PR merges changes from develop to main for production release.
