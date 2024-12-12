@@ -53,11 +53,11 @@ jobs:
 
           while IFS= read -r line; do
             if [[ "$line" == *"feat:"* ]]; then
-              FEATURES+="- $(echo $line | sed 's/^feat: //')\n"
+              FEATURES+="- $(echo $line | sed 's/^feat(web): //')\n"
             elif [[ "$line" == *"fix:"* ]]; then
-              FIXES+="- $(echo $line | sed 's/^fix: //')\n"
+              FIXES+="- $(echo $line | sed 's/^fix(web): //')\n"
             elif [[ "$line" == *"chore:"* ]]; then
-              CHORES+="- $(echo $line | sed 's/^chore: //')\n"
+              CHORES+="- $(echo $line | sed 's/^chore(web): //')\n"
             elif [[ "$line" == *"ci:"* ]]; then
               CI+="- $(echo $line | sed 's/^ci: //')\n"
             else
