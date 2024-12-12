@@ -52,11 +52,11 @@ jobs:
           OTHERS=""
 
           while IFS= read -r line; do
-            if [[ "$line" == *"feat:"* ]]; then
+            if [[ "$line" == *"feat(web):"* ]]; then
               FEATURES+="- $(echo $line | sed 's/^feat(web): //')\n"
-            elif [[ "$line" == *"fix:"* ]]; then
+            elif [[ "$line" == *"fix(web):"* ]]; then
               FIXES+="- $(echo $line | sed 's/^fix(web): //')\n"
-            elif [[ "$line" == *"chore:"* ]]; then
+            elif [[ "$line" == *"chore(web):"* ]]; then
               CHORES+="- $(echo $line | sed 's/^chore(web): //')\n"
             elif [[ "$line" == *"ci:"* ]]; then
               CI+="- $(echo $line | sed 's/^ci: //')\n"
@@ -118,8 +118,8 @@ jobs:
         run: |
           LATEST_TAG="${{ steps.get_latest_tag.outputs.latest_tag }}"
           MAJOR=$(echo $LATEST_TAG | grep -oE '[0-9]+' | sed -n 1p)
-          MINOR=$(echo $LATEST_TAG | grep -oE '[0-9]+' | sed -n 2p)
-          PATCH=$(echo $LATEST_TAG | grep -oE '[0-9]+' | sed -n 3p)
+          MINOR=$(echo $LATEST_TAG | grep -oE '[0-99]+' | sed -n 2p)
+          PATCH=$(echo $LATEST_TAG | grep -oE '[0-99]+' | sed -n 3p)
 
           if [ "${{ steps.determine_bump.outputs.major }}" == "true" ]; then
             MAJOR=$((MAJOR + 1))
