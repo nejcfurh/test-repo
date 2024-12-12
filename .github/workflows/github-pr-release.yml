@@ -21,13 +21,7 @@ jobs:
         with:
           fetch-depth: 0 # Fetch entire commit history and all tags
 
-      - name: Switch to Main Branch and Fetch Tags
-        run: |
-          git checkout main
-          git fetch origin main --tags
-          git pull origin main --tags
-
-      - name: Get Latest Tag from Main
+      - name: Get Latest Tag from the repository
         id: get_latest_tag
         run: |
           # Get the latest tag from the main branch
