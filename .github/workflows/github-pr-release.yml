@@ -117,9 +117,9 @@ jobs:
         id: increment_version
         run: |
           LATEST_TAG="${{ steps.get_latest_tag.outputs.latest_tag }}"
-          MAJOR=$(echo $LATEST_TAG | grep -oE '[0-9]+' | sed -n 1p)
-          MINOR=$(echo $LATEST_TAG | grep -oE '[0-9]+' | sed -n 2p)
-          PATCH=$(echo $LATEST_TAG | grep -oE '[0-9]+' | sed -n 3p)
+          MAJOR=$(echo $LATEST_TAG | sed 's/v//g' | cut -d '.' -f 1)
+          MINOR=$(echo $LATEST_TAG | sed 's/v//g' | cut -d '.' -f 2)
+          PATCH=$(echo $LATEST_TAG | sed 's/v//g' | cut -d '.' -f 3)
 
           if [ "${{ steps.determine_bump.outputs.major }}" == "true" ]; then
             MAJOR=$((MAJOR + 1))
