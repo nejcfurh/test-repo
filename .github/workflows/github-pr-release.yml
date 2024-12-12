@@ -19,18 +19,19 @@ jobs:
       - name: Checkout Full Repository with Tags
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0 # Fetch entire commit history
-          ref: main # Explicitly fetch from main branch to ensure all tags are available
+          fetch-depth: 0 # Fetch entire commit history and all tags
 
-      - name: Switch to Main Branch
+      - name: Switch to Main Branch and Fetch Tags
         run: |
           git checkout main
-          git pull --tags # Ensure the latest tags are pulled from origin/main
+          git fetch origin main --tags
+          git pull origin main --tags
 
       - name: Get Latest Tag from Main
         id: get_latest_tag
         run: |
-          LATEST_TAG=$(git describe --tags `git rev-list --tags --max-count=1`)
+          # Get the latest tag from the main branch
+          LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
           if [ -z "$LATEST_TAG" ]; then
             echo "No tags found, defaulting to v0.0.0"
             LATEST_TAG="v0.0.0"
@@ -60,7 +61,7 @@ jobs:
           git tag ${{ steps.create_new_tag.outputs.new_tag }}
           git push origin ${{ steps.create_new_tag.outputs.new_tag }}
 
-      - name: Create Release on GitHub
+      - name: Create GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.ORG_GITHUB_WRITE_TOKEN }}
         run: |
@@ -70,7 +71,7 @@ jobs:
             -d '{
               "tag_name": "${{ steps.create_new_tag.outputs.new_tag }}",
               "name": "Release ${{ steps.create_new_tag.outputs.new_tag }}",
-              "body": "This release was automatically created from main.",
+              "body": "This release was automatically created with changes from develop.",
               "draft": false,
               "prerelease": false
             }' \
