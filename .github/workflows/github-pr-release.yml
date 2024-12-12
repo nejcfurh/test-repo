@@ -115,26 +115,43 @@ jobs:
         id: increment_version
         run: |
           LATEST_TAG="${{ steps.get_latest_tag.outputs.latest_tag }}"
+          if [ -z "$LATEST_TAG" ]; then
+          LATEST_TAG="v0.00.00"
+          fi
+
+          # Extract MAJOR, MINOR, PATCH from LATEST_TAG (e.g., v1.07.45)
           VERSION="${LATEST_TAG#v}"
           IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
 
-          if [ -z "$MAJOR" ] || [ -z "$MINOR" ] || [ -z "$PATCH" ]; then
-            MAJOR=0
-            MINOR=0
-            PATCH=0
-          fi
+          # Default to 0 if any part of the version is empty
+          MAJOR=${MAJOR:-0}
+          MINOR=${MINOR:-0}
+          PATCH=${PATCH:-0}
 
+          # Log the current version
+          echo "Current version: MAJOR=$MAJOR, MINOR=$MINOR, PATCH=$PATCH"
+
+          # Ensure MINOR and PATCH are treated as numbers (not octal)
+          MINOR=$((10#$MINOR))
+          PATCH=$((10#$PATCH))
+
+          # Check for version bump logic (Major > Minor > Patch)
           if [ "${{ steps.determine_bump.outputs.major }}" == "true" ]; then
-            MAJOR=$((MAJOR + 1))
-            MINOR=0
-            PATCH=0
+          MAJOR=$((MAJOR + 1))
+          MINOR=0
+          PATCH=0
           elif [ "${{ steps.determine_bump.outputs.minor }}" == "true" ]; then
-            MINOR=$((MINOR + 1))
-            PATCH=0
+          MINOR=$((MINOR + 1))
+          PATCH=0
           elif [ "${{ steps.determine_bump.outputs.patch }}" == "true" ]; then
-            PATCH=$((PATCH + 1))
+          PATCH=$((PATCH + 1))
           fi
 
+          # Pad MINOR and PATCH to two digits
+          MINOR=$(printf "%02d" $MINOR)
+          PATCH=$(printf "%02d" $PATCH)
+
+          # Construct the new tag
           NEW_TAG="v${MAJOR}.${MINOR}.${PATCH}"
           echo "New version: $NEW_TAG"
           echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
