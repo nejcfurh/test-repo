@@ -12,32 +12,66 @@ permissions:
   pull-requests: write
 
 jobs:
-  custom-release:
+  create-release:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout Full Repository with Tags
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # Fetch entire commit history
+          ref: main # Explicitly fetch from main branch to ensure all tags are available
 
-      - name: Extract Version from PR Title
-        id: extract_version
+      - name: Switch to Main Branch
         run: |
-          echo "PR TITLE: ${{ github.event.pull_request.title }}"
-          VERSION=$(echo "${{ github.event.pull_request.title }}" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' || echo "v0.0.0")
-          echo "Extracted Version: $VERSION"
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          git checkout main
+          git pull --tags # Ensure the latest tags are pulled from origin/main
+
+      - name: Get Latest Tag from Main
+        id: get_latest_tag
+        run: |
+          LATEST_TAG=$(git describe --tags `git rev-list --tags --max-count=1`)
+          if [ -z "$LATEST_TAG" ]; then
+            echo "No tags found, defaulting to v0.0.0"
+            LATEST_TAG="v0.0.0"
+          fi
+          echo "Latest tag from main is: $LATEST_TAG"
+          echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+
+      - name: Create New Tag from Latest Tag
+        id: create_new_tag
+        run: |
+          # Extract the major, minor, and patch numbers from the latest tag
+          MAJOR=$(echo ${{ steps.get_latest_tag.outputs.latest_tag }} | grep -oE '[0-9]+' | sed -n 1p)
+          MINOR=$(echo ${{ steps.get_latest_tag.outputs.latest_tag }} | grep -oE '[0-9]+' | sed -n 2p)
+          PATCH=$(echo ${{ steps.get_latest_tag.outputs.latest_tag }} | grep -oE '[0-9]+' | sed -n 3p)
+
+          # Increment the patch version
+          NEW_PATCH=$((PATCH + 1))
+          NEW_TAG="v${MAJOR}.${MINOR}.${NEW_PATCH}"
+
+          echo "New tag to be created: $NEW_TAG"
+          echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
 
       - name: Create Git Tag
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
-          TAG=${{ steps.extract_version.outputs.version }}
-          echo "Creating tag $TAG"
-          git tag $TAG
-          git push origin $TAG
+          git tag ${{ steps.create_new_tag.outputs.new_tag }}
+          git push origin ${{ steps.create_new_tag.outputs.new_tag }}
 
-      - name: Create Release
-        uses: yutailang0119/action-github-pr-release@v3
-        with:
-          token: ${{ secrets.ORG_GITHUB_WRITE_TOKEN }}
-          production-branch: main
-          staging-branch: develop
+      - name: Create Release on GitHub
+        env:
+          GITHUB_TOKEN: ${{ secrets.ORG_GITHUB_WRITE_TOKEN }}
+        run: |
+          curl -X POST \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "tag_name": "${{ steps.create_new_tag.outputs.new_tag }}",
+              "name": "Release ${{ steps.create_new_tag.outputs.new_tag }}",
+              "body": "This release was automatically created from main.",
+              "draft": false,
+              "prerelease": false
+            }' \
+            https://api.github.com/repos/${{ github.repository }}/releases
