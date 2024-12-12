@@ -114,3 +114,34 @@ jobs:
               "prerelease": false
             }' \
             https://api.github.com/repos/${{ github.repository }}/releases
+
+      - name: Check if PR from Develop to Main Exists
+        id: check_pr
+        env:
+          GITHUB_TOKEN: ${{ secrets.ORG_GITHUB_WRITE_TOKEN }}
+        run: |
+          PR_RESPONSE=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls?state=open&base=main&head=develop")
+          PR_COUNT=$(echo "$PR_RESPONSE" | jq '. | length')
+          if [ "$PR_COUNT" -gt 0 ]; then
+            echo "PR already exists from develop to main"
+            echo "pr_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "No open PR from develop to main"
+            echo "pr_exists=false" >> $GITHUB_OUTPUT
+
+      - name: Create Pull Request from Develop to Main
+        if: steps.check_pr.outputs.pr_exists == 'false'
+        env:
+          GITHUB_TOKEN: ${{ secrets.ORG_GITHUB_WRITE_TOKEN }}
+        run: |
+          curl -X POST \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "title": "Release ${{ steps.increment_version.outputs.new_tag }}",
+              "head": "develop",
+              "base": "main",
+              "body": "This PR merges changes from develop to main for production release."
+            }' \
+            https://api.github.com/repos/${{ github.repository }}/pulls
