@@ -21,7 +21,7 @@ export default function Home() {
             .
           </li>
           <li>
-            Save and see your changes instantly. Okay, works via Github API
+            Save and see your changes instantly. Okay, this is more like it!
           </li>
         </ol>
 
