@@ -1,4 +1,4 @@
-name: github-pr-release
+name: create-release-PR-for-production
 
 on:
   pull_request:
@@ -12,12 +12,31 @@ permissions:
   pull-requests: write
 
 jobs:
-  github-pr-release:
+  custom-release:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: yutailang0119/action-github-pr-release@v3
+
+      - name: Extract Version from PR Title
+        id: extract_version
+        run: |
+          echo "PR TITLE: ${{ github.event.pull_request.title }}"
+          VERSION=$(echo "${{ github.event.pull_request.title }}" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' || echo "v0.0.0")
+          echo "Extracted Version: $VERSION"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create Git Tag
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          TAG=${{ steps.extract_version.outputs.version }}
+          echo "Creating tag $TAG"
+          git tag $TAG
+          git push origin $TAG
+
+      - name: Create Release
+        uses: yutailang0119/action-github-pr-release@v3
         with:
           token: ${{ secrets.ORG_GITHUB_WRITE_TOKEN }}
           production-branch: main
