@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: yutailang0119/action-github-pr-release@v3
         with:
-          token: ${{ github.token }}
+          token: ${{ secrets.ORG_GITHUB_WRITE_TOKEN }}
           production-branch: main
           staging-branch: develop
           label: Release
