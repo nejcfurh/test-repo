@@ -1,0 +1,43 @@
+name: create-release-PR-for-production
+
+on:
+  pull_request:
+    branches:
+      - develop
+    types:
+      - closed
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  create-release:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Full Repository with Tags
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Get Latest Tag
+        id: get_latest_tag
+        run: |
+          LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
+          if [ -z "$LATEST_TAG" ]; then
+            echo "No tags found, defaulting to v0.0.0"
+            LATEST_TAG="v0.0.0"
+          fi
+          echo "Latest tag from main is: $LATEST_TAG"
+          echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+
+      - name: Create PR from Develop to Main
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.ORG_GITHUB_WRITE_TOKEN }}
+          branch: main
+          base: develop
+          title: 'Release PR for production'
+          body: |
+            This PR merges changes from develop to main for production release.
