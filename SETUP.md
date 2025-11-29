@@ -13,7 +13,7 @@ This setup implements an automated release workflow with two branches:
 └─────────────┘                    └──────┬──────┘
                                           │
                                           │ push triggers
-                                          │ release-please
+                                          │ auto-release-pr
                                           ▼
                                    ┌──────────────┐
                                    │ Release PR   │
@@ -29,7 +29,8 @@ This setup implements an automated release workflow with two branches:
                                    └──────┬──────┘
                                           │
                                           │ push triggers
-                                          │ sync workflow
+                                          │ create-release
+                                          │ and sync workflow
                                           ▼
                                    ┌─────────────┐
                                    │   develop   │◄── synced with
@@ -46,22 +47,23 @@ This setup implements an automated release workflow with two branches:
 
 ### 2. Release PR Creation (Automatic)
 When a PR is merged to `develop`:
-- `release-please.yml` triggers on push to `develop`
-- Release Please analyzes commits since last release
-- Creates/updates a Release PR targeting `main`
+- `auto-release-pr.yml` triggers on push to `develop`
+- Workflow analyzes commits since last release
+- **Automatically creates/updates a Release PR from `develop` to `main`**
 - The Release PR includes:
-  - Version bump in `package.json`
-  - Updated `CHANGELOG.md`
-  - All conventional commits summarized
+  - Proposed version bump
+  - All conventional commits summarized in the PR description
 
-### 3. Release to Production
-When you're ready to release:
-- Review and merge the Release PR to `main`
-- Release Please creates a GitHub Release with tag
+### 3. Release to Production (Automatic)
+When you merge the Release PR to `main`:
+- `create-release.yml` triggers automatically
+- Updates `package.json` with new version
+- Generates and updates `CHANGELOG.md`
+- Creates a GitHub Release with tag
 - `sync-main-to-develop.yml` automatically syncs `main` back to `develop`
 
 ### 4. Sync Back (Automatic)
-After merging to `main`:
+After the release:
 - The sync workflow merges `main` into `develop`
 - This ensures `develop` has the version bump and changelog updates
 - Prevents divergence between branches
@@ -71,10 +73,11 @@ After merging to `main`:
 ```
 .github/
 └── workflows/
-    ├── release-please.yml          # Creates release PRs
+    ├── auto-release-pr.yml         # Creates PR from develop to main
+    ├── create-release.yml          # Creates release when PR is merged
     └── sync-main-to-develop.yml    # Syncs after release
-release-please-config.json          # Release Please configuration
-.release-please-manifest.json       # Tracks current version
+release-please-config.json          # Configuration (optional)
+.release-please-manifest.json       # Tracks current version (optional)
 ```
 
 ## Setup Instructions
@@ -90,10 +93,10 @@ Configure branch protection for both `develop` and `main`:
 - Allow the GitHub Actions bot to bypass (for sync workflow)
 
 ### 3. Initial Setup
-1. ✅ All files have been copied to your repository
+1. ✅ All files have been added to your repository
 2. Set `develop` as the default branch (if not already)
-3. ✅ `.release-please-manifest.json` has been set to your current version (1.5.1)
-4. Start making conventional commits to `develop`
+3. Start making conventional commits to `develop`
+4. Merge PRs to `develop` → Release PR will automatically be created to `main`
 
 ## Conventional Commits
 
@@ -121,29 +124,24 @@ docs: improve API documentation
 ## Troubleshooting
 
 ### Release PR not created
-- Ensure commits use conventional commit format
-- Check that `release-please.yml` has correct permissions
+- Ensure commits use conventional commit format (`feat:`, `fix:`, etc.)
+- Check that `auto-release-pr.yml` workflow ran successfully
 - Verify `ORG_GITHUB_WRITE_TOKEN` secret is set
 
 ### Sync workflow fails
 - Check if there are merge conflicts between `main` and `develop`
 - Ensure the token has push permissions to `develop`
 
-### Multiple release PRs
-- This shouldn't happen with proper setup
-- If it does, close duplicates and keep the most recent one
+### Version not bumped correctly
+- Check that commits follow conventional commit format
+- Major bump: Include "BREAKING CHANGE" in commit message
+- Minor bump: Use `feat:` prefix
+- Patch bump: Use `fix:` prefix
 
 ## Notes
 
-- The Release PR accumulates all changes since the last release
-- Merging multiple feature PRs to `develop` will update the same Release PR
-- Only one Release PR exists at a time (targeting `main`)
-- The sync workflow uses `chore:` prefix to avoid triggering another release
-
-## Old Workflow
-
-Your old workflow file (`github-pr-release.yml`) has been left in place. You can:
-- Delete it if you want to use only the new release-please workflow
-- Keep both if you want to migrate gradually
-- The new workflow is simpler and more maintainable using Google's release-please action
+- The Release PR automatically updates when you merge more PRs to `develop`
+- Only one Release PR exists at a time (from `develop` to `main`)
+- The sync workflow uses `[skip ci]` to avoid triggering another workflow
+- Version bumps and changelog updates happen automatically when merging to `main`
 
