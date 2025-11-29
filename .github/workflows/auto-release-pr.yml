@@ -31,42 +31,54 @@ jobs:
       - name: Get latest release version
         id: get_version
         run: |
-          # Get the latest release tag
-          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          # Get the latest release tag from GitHub releases (not just git tags)
+          LATEST_TAG=$(gh release list --limit 1 --json tagName --jq '.[0].tagName' 2>/dev/null || git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
           echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
           echo "Latest release: $LATEST_TAG"
+        env:
+          GITHUB_TOKEN: ${{ secrets.ORG_GITHUB_WRITE_TOKEN }}
 
       - name: Analyze commits for version bump
         id: analyze
         run: |
           LATEST_TAG="${{ steps.get_version.outputs.latest_tag }}"
-
+          
+          echo "=== Debug Info ==="
+          echo "Latest tag: $LATEST_TAG"
+          echo "Current branch: $(git branch --show-current)"
+          echo "=================="
+          
           # Get commits since last release
           if [ "$LATEST_TAG" = "v0.0.0" ]; then
             COMMITS=$(git log --pretty=format:"%s" develop)
           else
             COMMITS=$(git log --pretty=format:"%s" $LATEST_TAG..develop)
           fi
-
+          
           echo "Commits since last release:"
           echo "$COMMITS"
-
+          echo "Number of commits: $(echo "$COMMITS" | wc -l)"
+          
           # Check for breaking changes, features, and fixes
           HAS_BREAKING=$(echo "$COMMITS" | grep -i "BREAKING CHANGE" || true)
           HAS_FEAT=$(echo "$COMMITS" | grep "^feat" || true)
           HAS_FIX=$(echo "$COMMITS" | grep "^fix" || true)
-
+          
           # Determine version bump type
           if [ -n "$HAS_BREAKING" ]; then
             echo "bump_type=major" >> $GITHUB_OUTPUT
+            echo "Version bump: MAJOR (breaking change detected)"
           elif [ -n "$HAS_FEAT" ]; then
             echo "bump_type=minor" >> $GITHUB_OUTPUT
+            echo "Version bump: MINOR (feature detected)"
           elif [ -n "$HAS_FIX" ]; then
             echo "bump_type=patch" >> $GITHUB_OUTPUT
+            echo "Version bump: PATCH (fix detected)"
           else
             echo "bump_type=none" >> $GITHUB_OUTPUT
+            echo "Version bump: NONE (no conventional commits found)"
           fi
-
+          
           # Count commits
           COMMIT_COUNT=$(echo "$COMMITS" | wc -l | xargs)
           echo "commit_count=$COMMIT_COUNT" >> $GITHUB_OUTPUT
