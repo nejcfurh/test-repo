@@ -122,34 +122,34 @@ jobs:
           echo "" >> /tmp/pr-body.md
           echo "### Changes since $LATEST_TAG:" >> /tmp/pr-body.md
           echo "" >> /tmp/pr-body.md
-
+          
           # Add commits grouped by type
           if git log --pretty=format:"%s" $LATEST_TAG..develop | grep "^feat" > /dev/null; then
             echo "" >> /tmp/pr-body.md
-            echo "#### ✨ Features" >> /tmp/pr-body.md
+            echo "#### Features" >> /tmp/pr-body.md
             git log --pretty=format:"- %s" $LATEST_TAG..develop | grep "^- feat" >> /tmp/pr-body.md
             echo "" >> /tmp/pr-body.md
           fi
-
+          
           if git log --pretty=format:"%s" $LATEST_TAG..develop | grep "^fix" > /dev/null; then
             echo "" >> /tmp/pr-body.md
-            echo "#### 🐛 Bug Fixes" >> /tmp/pr-body.md
+            echo "#### Bug Fixes" >> /tmp/pr-body.md
             git log --pretty=format:"- %s" $LATEST_TAG..develop | grep "^- fix" >> /tmp/pr-body.md
             echo "" >> /tmp/pr-body.md
           fi
-
+          
           if git log --pretty=format:"%s" $LATEST_TAG..develop | grep -E "^chore|^ci|^docs" > /dev/null; then
             echo "" >> /tmp/pr-body.md
-            echo "#### 🔧 Other Changes" >> /tmp/pr-body.md
+            echo "#### Other Changes" >> /tmp/pr-body.md
             git log --pretty=format:"- %s" $LATEST_TAG..develop | grep -E "^- chore|^- ci|^- docs" >> /tmp/pr-body.md
             echo "" >> /tmp/pr-body.md
           fi
-
+          
           # Check if PR exists, create or update
           if [ "${{ steps.check_pr.outputs.pr_exists }}" = "0" ]; then
             echo "Creating new PR..."
             gh pr create \
-              --title "🚀 Release $NEW_VERSION" \
+              --title "Release $NEW_VERSION" \
               --body-file /tmp/pr-body.md \
               --base main \
               --head develop || true
@@ -161,6 +161,6 @@ jobs:
             echo "Updating existing PR..."
             PR_NUMBER=$(gh pr list --base main --head develop --state open --json number --jq '.[0].number')
             gh pr edit $PR_NUMBER \
-              --title "🚀 Release $NEW_VERSION" \
+              --title "Release $NEW_VERSION" \
               --body-file /tmp/pr-body.md
           fi
