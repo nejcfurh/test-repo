@@ -1,5 +1,30 @@
 # Changelog
 
+## v2.2.0 (2025-11-29)
+
+
+### ✨ Features
+
+- feat: sevent feature (178abb0)
+- feat: sixth feature (303d713)
+- feat: fifth feature (992c88d)
+- feat: fourth feature (3e2e1d5)
+- feat: second feature (37b1917)
+
+
+### 🐛 Bug Fixes
+
+- fix: graph (a6a7ab7)
+- fix: yaml file (5388725)
+
+
+### 🔧 Other Changes
+
+- ci: third feature (fcdb7ee)
+- chore: sync main to develop [skip ci] (02e62e7)
+
+# Changelog
+
 ## [2.1.0](https://github.com/nejcfurh/test-repo/compare/v2.0.0...v2.1.0) (2025-11-29)
 
 
