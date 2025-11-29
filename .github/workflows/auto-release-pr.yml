@@ -103,43 +103,48 @@ jobs:
           NEW_VERSION="v${MAJOR}.${MINOR}.${PATCH}"
           echo "New version will be: $NEW_VERSION"
           
-          # Create PR body with changelog
-          PR_BODY="## Release $NEW_VERSION
+          # Generate PR body file
+          cat > /tmp/pr-body.md << 'EOF'
+## Release ${NEW_VERSION}
 
 This PR was automatically created by the release workflow.
 
-### Changes since $LATEST_TAG:
+### Changes since ${LATEST_TAG}:
 
-"
+EOF
           
           # Add commits grouped by type
           if git log --pretty=format:"%s" $LATEST_TAG..develop | grep "^feat" > /dev/null; then
-            PR_BODY+="
-#### ✨ Features
-$(git log --pretty=format:"- %s" $LATEST_TAG..develop | grep "^- feat")
-"
+            echo "" >> /tmp/pr-body.md
+            echo "#### ✨ Features" >> /tmp/pr-body.md
+            git log --pretty=format:"- %s" $LATEST_TAG..develop | grep "^- feat" >> /tmp/pr-body.md
+            echo "" >> /tmp/pr-body.md
           fi
           
           if git log --pretty=format:"%s" $LATEST_TAG..develop | grep "^fix" > /dev/null; then
-            PR_BODY+="
-#### 🐛 Bug Fixes
-$(git log --pretty=format:"- %s" $LATEST_TAG..develop | grep "^- fix")
-"
+            echo "" >> /tmp/pr-body.md
+            echo "#### 🐛 Bug Fixes" >> /tmp/pr-body.md
+            git log --pretty=format:"- %s" $LATEST_TAG..develop | grep "^- fix" >> /tmp/pr-body.md
+            echo "" >> /tmp/pr-body.md
           fi
           
-          if git log --pretty=format:"%s" $LATEST_TAG..develop | grep "^chore\|^ci\|^docs" > /dev/null; then
-            PR_BODY+="
-#### 🔧 Other Changes
-$(git log --pretty=format:"- %s" $LATEST_TAG..develop | grep "^- chore\|^- ci\|^- docs")
-"
+          if git log --pretty=format:"%s" $LATEST_TAG..develop | grep -E "^chore|^ci|^docs" > /dev/null; then
+            echo "" >> /tmp/pr-body.md
+            echo "#### 🔧 Other Changes" >> /tmp/pr-body.md
+            git log --pretty=format:"- %s" $LATEST_TAG..develop | grep -E "^- chore|^- ci|^- docs" >> /tmp/pr-body.md
+            echo "" >> /tmp/pr-body.md
           fi
+          
+          # Replace variables in the body file
+          sed -i "s/\${NEW_VERSION}/$NEW_VERSION/g" /tmp/pr-body.md
+          sed -i "s/\${LATEST_TAG}/$LATEST_TAG/g" /tmp/pr-body.md
           
           # Check if PR exists, create or update
           if [ "${{ steps.check_pr.outputs.pr_exists }}" = "0" ]; then
             echo "Creating new PR..."
             gh pr create \
               --title "🚀 Release $NEW_VERSION" \
-              --body "$PR_BODY" \
+              --body-file /tmp/pr-body.md \
               --base main \
               --head develop \
               --label "release"
@@ -148,6 +153,6 @@ $(git log --pretty=format:"- %s" $LATEST_TAG..develop | grep "^- chore\|^- ci\|^
             PR_NUMBER=$(gh pr list --base main --head develop --state open --json number --jq '.[0].number')
             gh pr edit $PR_NUMBER \
               --title "🚀 Release $NEW_VERSION" \
-              --body "$PR_BODY"
+              --body-file /tmp/pr-body.md
           fi
 
