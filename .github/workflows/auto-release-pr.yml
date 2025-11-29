@@ -1,0 +1,153 @@
+name: Auto Create Release PR
+
+on:
+  push:
+    branches:
+      - develop
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  create-release-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.ORG_GITHUB_WRITE_TOKEN }}
+
+      - name: Check for existing PR
+        id: check_pr
+        env:
+          GITHUB_TOKEN: ${{ secrets.ORG_GITHUB_WRITE_TOKEN }}
+        run: |
+          # Check if there's already an open PR from develop to main
+          PR_EXISTS=$(gh pr list --base main --head develop --state open --json number --jq length)
+          echo "pr_exists=$PR_EXISTS" >> $GITHUB_OUTPUT
+
+      - name: Get latest release version
+        id: get_version
+        run: |
+          # Get the latest release tag
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          echo "Latest release: $LATEST_TAG"
+
+      - name: Analyze commits for version bump
+        id: analyze
+        run: |
+          LATEST_TAG="${{ steps.get_version.outputs.latest_tag }}"
+          
+          # Get commits since last release
+          if [ "$LATEST_TAG" = "v0.0.0" ]; then
+            COMMITS=$(git log --pretty=format:"%s" develop)
+          else
+            COMMITS=$(git log --pretty=format:"%s" $LATEST_TAG..develop)
+          fi
+          
+          echo "Commits since last release:"
+          echo "$COMMITS"
+          
+          # Check for breaking changes, features, and fixes
+          HAS_BREAKING=$(echo "$COMMITS" | grep -i "BREAKING CHANGE" || true)
+          HAS_FEAT=$(echo "$COMMITS" | grep "^feat" || true)
+          HAS_FIX=$(echo "$COMMITS" | grep "^fix" || true)
+          
+          # Determine version bump type
+          if [ -n "$HAS_BREAKING" ]; then
+            echo "bump_type=major" >> $GITHUB_OUTPUT
+          elif [ -n "$HAS_FEAT" ]; then
+            echo "bump_type=minor" >> $GITHUB_OUTPUT
+          elif [ -n "$HAS_FIX" ]; then
+            echo "bump_type=patch" >> $GITHUB_OUTPUT
+          else
+            echo "bump_type=none" >> $GITHUB_OUTPUT
+          fi
+          
+          # Count commits
+          COMMIT_COUNT=$(echo "$COMMITS" | wc -l | xargs)
+          echo "commit_count=$COMMIT_COUNT" >> $GITHUB_OUTPUT
+          echo "has_commits=$( [ -n "$COMMITS" ] && echo 'true' || echo 'false' )" >> $GITHUB_OUTPUT
+
+      - name: Create or update PR
+        if: steps.analyze.outputs.has_commits == 'true' && steps.analyze.outputs.bump_type != 'none'
+        env:
+          GITHUB_TOKEN: ${{ secrets.ORG_GITHUB_WRITE_TOKEN }}
+        run: |
+          BUMP_TYPE="${{ steps.analyze.outputs.bump_type }}"
+          LATEST_TAG="${{ steps.get_version.outputs.latest_tag }}"
+          
+          # Parse current version
+          VERSION="${LATEST_TAG#v}"
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+          
+          # Increment version based on bump type
+          case "$BUMP_TYPE" in
+            major)
+              MAJOR=$((MAJOR + 1))
+              MINOR=0
+              PATCH=0
+              ;;
+            minor)
+              MINOR=$((MINOR + 1))
+              PATCH=0
+              ;;
+            patch)
+              PATCH=$((PATCH + 1))
+              ;;
+          esac
+          
+          NEW_VERSION="v${MAJOR}.${MINOR}.${PATCH}"
+          echo "New version will be: $NEW_VERSION"
+          
+          # Create PR body with changelog
+          PR_BODY="## Release $NEW_VERSION
+
+This PR was automatically created by the release workflow.
+
+### Changes since $LATEST_TAG:
+
+"
+          
+          # Add commits grouped by type
+          if git log --pretty=format:"%s" $LATEST_TAG..develop | grep "^feat" > /dev/null; then
+            PR_BODY+="
+#### ✨ Features
+$(git log --pretty=format:"- %s" $LATEST_TAG..develop | grep "^- feat")
+"
+          fi
+          
+          if git log --pretty=format:"%s" $LATEST_TAG..develop | grep "^fix" > /dev/null; then
+            PR_BODY+="
+#### 🐛 Bug Fixes
+$(git log --pretty=format:"- %s" $LATEST_TAG..develop | grep "^- fix")
+"
+          fi
+          
+          if git log --pretty=format:"%s" $LATEST_TAG..develop | grep "^chore\|^ci\|^docs" > /dev/null; then
+            PR_BODY+="
+#### 🔧 Other Changes
+$(git log --pretty=format:"- %s" $LATEST_TAG..develop | grep "^- chore\|^- ci\|^- docs")
+"
+          fi
+          
+          # Check if PR exists, create or update
+          if [ "${{ steps.check_pr.outputs.pr_exists }}" = "0" ]; then
+            echo "Creating new PR..."
+            gh pr create \
+              --title "🚀 Release $NEW_VERSION" \
+              --body "$PR_BODY" \
+              --base main \
+              --head develop \
+              --label "release"
+          else
+            echo "Updating existing PR..."
+            PR_NUMBER=$(gh pr list --base main --head develop --state open --json number --jq '.[0].number')
+            gh pr edit $PR_NUMBER \
+              --title "🚀 Release $NEW_VERSION" \
+              --body "$PR_BODY"
+          fi
+
