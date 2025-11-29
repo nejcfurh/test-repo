@@ -118,7 +118,7 @@ jobs:
           # Add commits grouped by type
           if git log --pretty=format:"%s" $LATEST_TAG..main | grep "^feat" > /dev/null; then
             echo "" >> /tmp/new-changelog.md
-            echo "### ✨ Features" >> /tmp/new-changelog.md
+            echo "### Features" >> /tmp/new-changelog.md
             echo "" >> /tmp/new-changelog.md
             git log --pretty=format:"- %s (%h)" $LATEST_TAG..main | grep "^- feat" >> /tmp/new-changelog.md
             echo "" >> /tmp/new-changelog.md
@@ -126,7 +126,7 @@ jobs:
           
           if git log --pretty=format:"%s" $LATEST_TAG..main | grep "^fix" > /dev/null; then
             echo "" >> /tmp/new-changelog.md
-            echo "### 🐛 Bug Fixes" >> /tmp/new-changelog.md
+            echo "### Bug Fixes" >> /tmp/new-changelog.md
             echo "" >> /tmp/new-changelog.md
             git log --pretty=format:"- %s (%h)" $LATEST_TAG..main | grep "^- fix" >> /tmp/new-changelog.md
             echo "" >> /tmp/new-changelog.md
@@ -134,7 +134,7 @@ jobs:
           
           if git log --pretty=format:"%s" $LATEST_TAG..main | grep -E "^chore|^ci|^docs|^style" > /dev/null; then
             echo "" >> /tmp/new-changelog.md
-            echo "### 🔧 Other Changes" >> /tmp/new-changelog.md
+            echo "### Other Changes" >> /tmp/new-changelog.md
             echo "" >> /tmp/new-changelog.md
             git log --pretty=format:"- %s (%h)" $LATEST_TAG..main | grep -E "^- chore|^- ci|^- docs|^- style" >> /tmp/new-changelog.md
             echo "" >> /tmp/new-changelog.md
@@ -153,21 +153,21 @@ jobs:
           echo "" >> /tmp/release-notes.md
           
           if git log --pretty=format:"%s" $LATEST_TAG..main | grep "^feat" > /dev/null; then
-            echo "### ✨ Features" >> /tmp/release-notes.md
+            echo "### Features" >> /tmp/release-notes.md
             echo "" >> /tmp/release-notes.md
             git log --pretty=format:"- %s (%h)" $LATEST_TAG..main | grep "^- feat" >> /tmp/release-notes.md
             echo "" >> /tmp/release-notes.md
           fi
           
           if git log --pretty=format:"%s" $LATEST_TAG..main | grep "^fix" > /dev/null; then
-            echo "### 🐛 Bug Fixes" >> /tmp/release-notes.md
+            echo "### Bug Fixes" >> /tmp/release-notes.md
             echo "" >> /tmp/release-notes.md
             git log --pretty=format:"- %s (%h)" $LATEST_TAG..main | grep "^- fix" >> /tmp/release-notes.md
             echo "" >> /tmp/release-notes.md
           fi
           
           if git log --pretty=format:"%s" $LATEST_TAG..main | grep -E "^chore|^ci|^docs|^style" > /dev/null; then
-            echo "### 🔧 Other Changes" >> /tmp/release-notes.md
+            echo "### Other Changes" >> /tmp/release-notes.md
             echo "" >> /tmp/release-notes.md
             git log --pretty=format:"- %s (%h)" $LATEST_TAG..main | grep -E "^- chore|^- ci|^- docs|^- style" >> /tmp/release-notes.md
             echo "" >> /tmp/release-notes.md
