@@ -1,5 +1,14 @@
 # Changelog
 
+## v2.4.1 (2025-11-29)
+
+
+### Bug Fixes
+
+- fix: versioning-icons (98c7922)
+
+# Changelog
+
 ## v2.4.0 (2025-11-29)
 
 
