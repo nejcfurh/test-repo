@@ -16,7 +16,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.ORG_GITHUB_WRITE_TOKEN }}
+          token: ${{ secrets.GITHUB_WRITE_TOKEN_TEST_REPO }}
 
       - name: Configure Git
         run: |
