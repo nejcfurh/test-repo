@@ -15,5 +15,7 @@ jobs:
     steps:
       - uses: googleapis/release-please-action@v4
         with:
-          token: ${{ secrets.GITHUB_WRITE_TOKEN_TEST_REPO }}
+          # Use GITHUB_TOKEN (default) or your custom token secret name
+          # If using custom token, replace GITHUB_TOKEN with your secret name like: secrets.YOUR_SECRET_NAME
+          token: ${{ secrets.ORG_GITHUB_WRITE_TOKEN }}
           target-branch: main
