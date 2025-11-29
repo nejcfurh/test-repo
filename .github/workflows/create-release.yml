@@ -206,6 +206,14 @@ jobs:
           echo "Syncing main branch back to develop..."
           git fetch origin develop
           git checkout develop
-          git merge origin/main -m "chore: sync main to develop [skip ci]"
+
+          # Try fast-forward merge first (no merge commit if possible)
+          if git merge origin/main --ff-only 2>/dev/null; then
+            echo "Fast-forward merge successful (no merge commit created)"
+          else
+            echo "Fast-forward not possible, performing regular merge..."
+            git merge origin/main --no-edit
+          fi
+
           git push origin develop
           echo "Successfully synced main to develop"
