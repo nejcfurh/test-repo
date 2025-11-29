@@ -1,5 +1,14 @@
 # Changelog
 
+## v2.6.0 (2025-11-29)
+
+
+### Features
+
+- feat: no ghost commit (dd53d99)
+
+# Changelog
+
 ## v2.5.0 (2025-11-29)
 
 
