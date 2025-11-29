@@ -1,5 +1,14 @@
 # Changelog
 
+## v2.3.0 (2025-11-29)
+
+
+### ✨ Features
+
+- feat: 9th feature (58692e0)
+
+# Changelog
+
 ## v2.2.0 (2025-11-29)
 
 
