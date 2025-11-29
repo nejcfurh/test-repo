@@ -40,22 +40,22 @@ jobs:
         id: analyze
         run: |
           LATEST_TAG="${{ steps.get_version.outputs.latest_tag }}"
-          
+
           # Get commits since last release
           if [ "$LATEST_TAG" = "v0.0.0" ]; then
             COMMITS=$(git log --pretty=format:"%s" develop)
           else
             COMMITS=$(git log --pretty=format:"%s" $LATEST_TAG..develop)
           fi
-          
+
           echo "Commits since last release:"
           echo "$COMMITS"
-          
+
           # Check for breaking changes, features, and fixes
           HAS_BREAKING=$(echo "$COMMITS" | grep -i "BREAKING CHANGE" || true)
           HAS_FEAT=$(echo "$COMMITS" | grep "^feat" || true)
           HAS_FIX=$(echo "$COMMITS" | grep "^fix" || true)
-          
+
           # Determine version bump type
           if [ -n "$HAS_BREAKING" ]; then
             echo "bump_type=major" >> $GITHUB_OUTPUT
@@ -66,7 +66,7 @@ jobs:
           else
             echo "bump_type=none" >> $GITHUB_OUTPUT
           fi
-          
+
           # Count commits
           COMMIT_COUNT=$(echo "$COMMITS" | wc -l | xargs)
           echo "commit_count=$COMMIT_COUNT" >> $GITHUB_OUTPUT
@@ -79,11 +79,11 @@ jobs:
         run: |
           BUMP_TYPE="${{ steps.analyze.outputs.bump_type }}"
           LATEST_TAG="${{ steps.get_version.outputs.latest_tag }}"
-          
+
           # Parse current version
           VERSION="${LATEST_TAG#v}"
           IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
-          
+
           # Increment version based on bump type
           case "$BUMP_TYPE" in
             major)
@@ -99,10 +99,10 @@ jobs:
               PATCH=$((PATCH + 1))
               ;;
           esac
-          
+
           NEW_VERSION="v${MAJOR}.${MINOR}.${PATCH}"
           echo "New version will be: $NEW_VERSION"
-          
+
           # Generate PR body file
           echo "## Release $NEW_VERSION" > /tmp/pr-body.md
           echo "" >> /tmp/pr-body.md
@@ -110,7 +110,7 @@ jobs:
           echo "" >> /tmp/pr-body.md
           echo "### Changes since $LATEST_TAG:" >> /tmp/pr-body.md
           echo "" >> /tmp/pr-body.md
-          
+
           # Add commits grouped by type
           if git log --pretty=format:"%s" $LATEST_TAG..develop | grep "^feat" > /dev/null; then
             echo "" >> /tmp/pr-body.md
@@ -118,21 +118,21 @@ jobs:
             git log --pretty=format:"- %s" $LATEST_TAG..develop | grep "^- feat" >> /tmp/pr-body.md
             echo "" >> /tmp/pr-body.md
           fi
-          
+
           if git log --pretty=format:"%s" $LATEST_TAG..develop | grep "^fix" > /dev/null; then
             echo "" >> /tmp/pr-body.md
             echo "#### 🐛 Bug Fixes" >> /tmp/pr-body.md
             git log --pretty=format:"- %s" $LATEST_TAG..develop | grep "^- fix" >> /tmp/pr-body.md
             echo "" >> /tmp/pr-body.md
           fi
-          
+
           if git log --pretty=format:"%s" $LATEST_TAG..develop | grep -E "^chore|^ci|^docs" > /dev/null; then
             echo "" >> /tmp/pr-body.md
             echo "#### 🔧 Other Changes" >> /tmp/pr-body.md
             git log --pretty=format:"- %s" $LATEST_TAG..develop | grep -E "^- chore|^- ci|^- docs" >> /tmp/pr-body.md
             echo "" >> /tmp/pr-body.md
           fi
-          
+
           # Check if PR exists, create or update
           if [ "${{ steps.check_pr.outputs.pr_exists }}" = "0" ]; then
             echo "Creating new PR..."
@@ -140,8 +140,11 @@ jobs:
               --title "🚀 Release $NEW_VERSION" \
               --body-file /tmp/pr-body.md \
               --base main \
-              --head develop \
-              --label "release"
+              --head develop || true
+            
+            # Try to add label if it exists (non-blocking)
+            PR_NUMBER=$(gh pr list --base main --head develop --state open --json number --jq '.[0].number')
+            gh pr edit $PR_NUMBER --add-label "release" 2>/dev/null || echo "Label 'release' not found, skipping..."
           else
             echo "Updating existing PR..."
             PR_NUMBER=$(gh pr list --base main --head develop --state open --json number --jq '.[0].number')
@@ -149,4 +152,3 @@ jobs:
               --title "🚀 Release $NEW_VERSION" \
               --body-file /tmp/pr-body.md
           fi
-
