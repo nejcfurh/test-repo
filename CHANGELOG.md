@@ -1,5 +1,14 @@
 # Changelog
 
+## v2.6.1 (2025-11-29)
+
+
+### Bug Fixes
+
+- fix: fixing stuff (948a892)
+
+# Changelog
+
 ## v2.6.0 (2025-11-29)
 
 
