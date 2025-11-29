@@ -104,14 +104,12 @@ jobs:
           echo "New version will be: $NEW_VERSION"
           
           # Generate PR body file
-          cat > /tmp/pr-body.md << 'EOF'
-## Release ${NEW_VERSION}
-
-This PR was automatically created by the release workflow.
-
-### Changes since ${LATEST_TAG}:
-
-EOF
+          echo "## Release $NEW_VERSION" > /tmp/pr-body.md
+          echo "" >> /tmp/pr-body.md
+          echo "This PR was automatically created by the release workflow." >> /tmp/pr-body.md
+          echo "" >> /tmp/pr-body.md
+          echo "### Changes since $LATEST_TAG:" >> /tmp/pr-body.md
+          echo "" >> /tmp/pr-body.md
           
           # Add commits grouped by type
           if git log --pretty=format:"%s" $LATEST_TAG..develop | grep "^feat" > /dev/null; then
@@ -134,10 +132,6 @@ EOF
             git log --pretty=format:"- %s" $LATEST_TAG..develop | grep -E "^- chore|^- ci|^- docs" >> /tmp/pr-body.md
             echo "" >> /tmp/pr-body.md
           fi
-          
-          # Replace variables in the body file
-          sed -i "s/\${NEW_VERSION}/$NEW_VERSION/g" /tmp/pr-body.md
-          sed -i "s/\${LATEST_TAG}/$LATEST_TAG/g" /tmp/pr-body.md
           
           # Check if PR exists, create or update
           if [ "${{ steps.check_pr.outputs.pr_exists }}" = "0" ]; then

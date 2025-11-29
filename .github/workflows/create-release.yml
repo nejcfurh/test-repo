@@ -110,50 +110,68 @@ jobs:
           NEW_TAG="${{ steps.new_version.outputs.new_tag }}"
           
           # Generate changelog content
-          CHANGELOG="# Changelog
-
-## $NEW_TAG ($(date +%Y-%m-%d))
-
-"
+          echo "# Changelog" > /tmp/new-changelog.md
+          echo "" >> /tmp/new-changelog.md
+          echo "## $NEW_TAG ($(date +%Y-%m-%d))" >> /tmp/new-changelog.md
+          echo "" >> /tmp/new-changelog.md
           
           # Add commits grouped by type
           if git log --pretty=format:"%s" $LATEST_TAG..main | grep "^feat" > /dev/null; then
-            CHANGELOG+="
-### ✨ Features
-
-$(git log --pretty=format:"- %s (%h)" $LATEST_TAG..main | grep "^- feat")
-
-"
+            echo "" >> /tmp/new-changelog.md
+            echo "### ✨ Features" >> /tmp/new-changelog.md
+            echo "" >> /tmp/new-changelog.md
+            git log --pretty=format:"- %s (%h)" $LATEST_TAG..main | grep "^- feat" >> /tmp/new-changelog.md
+            echo "" >> /tmp/new-changelog.md
           fi
           
           if git log --pretty=format:"%s" $LATEST_TAG..main | grep "^fix" > /dev/null; then
-            CHANGELOG+="
-### 🐛 Bug Fixes
-
-$(git log --pretty=format:"- %s (%h)" $LATEST_TAG..main | grep "^- fix")
-
-"
+            echo "" >> /tmp/new-changelog.md
+            echo "### 🐛 Bug Fixes" >> /tmp/new-changelog.md
+            echo "" >> /tmp/new-changelog.md
+            git log --pretty=format:"- %s (%h)" $LATEST_TAG..main | grep "^- fix" >> /tmp/new-changelog.md
+            echo "" >> /tmp/new-changelog.md
           fi
           
-          if git log --pretty=format:"%s" $LATEST_TAG..main | grep "^chore\|^ci\|^docs\|^style" > /dev/null; then
-            CHANGELOG+="
-### 🔧 Other Changes
-
-$(git log --pretty=format:"- %s (%h)" $LATEST_TAG..main | grep "^- chore\|^- ci\|^- docs\|^- style")
-
-"
+          if git log --pretty=format:"%s" $LATEST_TAG..main | grep -E "^chore|^ci|^docs|^style" > /dev/null; then
+            echo "" >> /tmp/new-changelog.md
+            echo "### 🔧 Other Changes" >> /tmp/new-changelog.md
+            echo "" >> /tmp/new-changelog.md
+            git log --pretty=format:"- %s (%h)" $LATEST_TAG..main | grep -E "^- chore|^- ci|^- docs|^- style" >> /tmp/new-changelog.md
+            echo "" >> /tmp/new-changelog.md
           fi
           
           # Prepend to existing CHANGELOG.md if it exists
           if [ -f CHANGELOG.md ]; then
-            EXISTING_CHANGELOG=$(cat CHANGELOG.md)
-            echo "$CHANGELOG$EXISTING_CHANGELOG" > CHANGELOG.md
-          else
-            echo "$CHANGELOG" > CHANGELOG.md
+            cat CHANGELOG.md >> /tmp/new-changelog.md
           fi
           
-          # Save changelog for release body
-          echo "$CHANGELOG" > /tmp/release-notes.md
+          # Move the new changelog into place
+          mv /tmp/new-changelog.md CHANGELOG.md
+          
+          # Copy for release notes (without the existing changelog)
+          echo "## $NEW_TAG ($(date +%Y-%m-%d))" > /tmp/release-notes.md
+          echo "" >> /tmp/release-notes.md
+          
+          if git log --pretty=format:"%s" $LATEST_TAG..main | grep "^feat" > /dev/null; then
+            echo "### ✨ Features" >> /tmp/release-notes.md
+            echo "" >> /tmp/release-notes.md
+            git log --pretty=format:"- %s (%h)" $LATEST_TAG..main | grep "^- feat" >> /tmp/release-notes.md
+            echo "" >> /tmp/release-notes.md
+          fi
+          
+          if git log --pretty=format:"%s" $LATEST_TAG..main | grep "^fix" > /dev/null; then
+            echo "### 🐛 Bug Fixes" >> /tmp/release-notes.md
+            echo "" >> /tmp/release-notes.md
+            git log --pretty=format:"- %s (%h)" $LATEST_TAG..main | grep "^- fix" >> /tmp/release-notes.md
+            echo "" >> /tmp/release-notes.md
+          fi
+          
+          if git log --pretty=format:"%s" $LATEST_TAG..main | grep -E "^chore|^ci|^docs|^style" > /dev/null; then
+            echo "### 🔧 Other Changes" >> /tmp/release-notes.md
+            echo "" >> /tmp/release-notes.md
+            git log --pretty=format:"- %s (%h)" $LATEST_TAG..main | grep -E "^- chore|^- ci|^- docs|^- style" >> /tmp/release-notes.md
+            echo "" >> /tmp/release-notes.md
+          fi
 
       - name: Commit version bump and changelog
         run: |
