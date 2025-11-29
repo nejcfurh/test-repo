@@ -1,5 +1,20 @@
 # Changelog
 
+## v2.4.0 (2025-11-29)
+
+
+### ✨ Features
+
+- feat: new version (7752ccb)
+
+
+### 🐛 Bug Fixes
+
+- fix: management fixes (8a615d1)
+- fix: versioning (b2f8354)
+
+# Changelog
+
 ## v2.3.0 (2025-11-29)
 
 
