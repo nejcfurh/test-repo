@@ -1,5 +1,14 @@
 # Changelog
 
+## v2.5.0 (2025-11-29)
+
+
+### Features
+
+- feat: combine actions (37292c5)
+
+# Changelog
+
 ## v2.4.1 (2025-11-29)
 
 
