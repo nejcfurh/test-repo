@@ -1,5 +1,14 @@
 # Changelog
 
+## v2.6.2 (2025-12-11)
+
+
+### Bug Fixes
+
+- fix: test-repo-key (b970f09)
+
+# Changelog
+
 ## v2.6.1 (2025-11-29)
 
 
