@@ -1,5 +1,14 @@
 # Changelog
 
+## v2.6.3 (2025-12-11)
+
+
+### Bug Fixes
+
+- fix: test-repo-token (5c9dc93)
+
+# Changelog
+
 ## v2.6.2 (2025-12-11)
 
 
