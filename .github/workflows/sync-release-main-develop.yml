@@ -1,0 +1,301 @@
+name: Generate Release Tag and Sync Main Branch to Develop Branch
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  create-release:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.ORG_GITHUB_WRITE_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Get latest release version
+        id: get_version
+        run: |
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+
+      - name: Analyze commits for version bump
+        id: analyze
+        run: |
+          LATEST_TAG="${{ steps.get_version.outputs.latest_tag }}"
+
+          # Get commits since last release on main branch (--first-parent to avoid duplicates from feature branches)
+          if [ "$LATEST_TAG" = "v0.0.0" ]; then
+            COMMITS=$(git log --first-parent --pretty=format:"%s" main)
+          else
+            COMMITS=$(git log --first-parent --pretty=format:"%s" $LATEST_TAG..main)
+          fi
+
+          # Check for breaking changes, features, and other changes
+          # Commit types from commitlint: build, chore, ci, docs, feat, fix, improvement, perf, refactor, revert, style, test
+          HAS_BREAKING=$(echo "$COMMITS" | grep -i "BREAKING CHANGE" || true)
+          HAS_FEAT=$(echo "$COMMITS" | grep -E "^feat\(" || true)
+          HAS_PATCH=$(echo "$COMMITS" | grep -E "^(fix|improvement|perf|refactor)\(" || true)
+          HAS_OTHER=$(echo "$COMMITS" | grep -E "^(build|chore|ci|docs|style|test|revert)\(" || true)
+
+          # Determine version bump type
+          if [ -n "$HAS_BREAKING" ]; then
+            echo "bump_type=major" >> $GITHUB_OUTPUT
+          elif [ -n "$HAS_FEAT" ]; then
+            echo "bump_type=minor" >> $GITHUB_OUTPUT
+          elif [ -n "$HAS_PATCH" ]; then
+            echo "bump_type=patch" >> $GITHUB_OUTPUT
+          elif [ -n "$HAS_OTHER" ]; then
+            echo "bump_type=patch" >> $GITHUB_OUTPUT
+          else
+            echo "bump_type=patch" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Calculate new version
+        id: new_version
+        run: |
+          BUMP_TYPE="${{ steps.analyze.outputs.bump_type }}"
+          LATEST_TAG="${{ steps.get_version.outputs.latest_tag }}"
+
+          # Parse current version
+          VERSION="${LATEST_TAG#v}"
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+
+          # Increment version based on bump type
+          case "$BUMP_TYPE" in
+            major)
+              MAJOR=$((MAJOR + 1))
+              MINOR=0
+              PATCH=0
+              ;;
+            minor)
+              MINOR=$((MINOR + 1))
+              PATCH=0
+              ;;
+            patch)
+              PATCH=$((PATCH + 1))
+              ;;
+          esac
+
+          NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+          NEW_TAG="v${NEW_VERSION}"
+
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
+          echo "New version: $NEW_TAG"
+
+      - name: Update package.json version
+        run: |
+          NEW_VERSION="${{ steps.new_version.outputs.new_version }}"
+
+          # Update version in package.json
+          npm version $NEW_VERSION --no-git-tag-version
+
+          echo "Updated package.json to version $NEW_VERSION"
+
+      - name: Generate CHANGELOG
+        id: changelog
+        run: |
+          LATEST_TAG="${{ steps.get_version.outputs.latest_tag }}"
+          NEW_TAG="${{ steps.new_version.outputs.new_tag }}"
+
+          # Generate changelog content
+          echo "# Changelog" > /tmp/new-changelog.md
+          echo "" >> /tmp/new-changelog.md
+          echo "## $NEW_TAG ($(date +%Y-%m-%d))" >> /tmp/new-changelog.md
+          echo "" >> /tmp/new-changelog.md
+
+          # Add commits grouped by type (--first-parent to avoid duplicates from feature branches)
+          # Commit types from commitlint: build, chore, ci, docs, feat, fix, improvement, perf, refactor, revert, style, test
+
+          if git log --first-parent --pretty=format:"%s" $LATEST_TAG..main | grep -E "^feat\(" > /dev/null; then
+            echo "" >> /tmp/new-changelog.md
+            echo "### Features" >> /tmp/new-changelog.md
+            echo "" >> /tmp/new-changelog.md
+            git log --first-parent --pretty=format:"- %s (%h)" $LATEST_TAG..main | grep -E "^- feat\(" >> /tmp/new-changelog.md
+            echo "" >> /tmp/new-changelog.md
+          fi
+
+          if git log --first-parent --pretty=format:"%s" $LATEST_TAG..main | grep -E "^fix\(" > /dev/null; then
+            echo "" >> /tmp/new-changelog.md
+            echo "### Bug Fixes" >> /tmp/new-changelog.md
+            echo "" >> /tmp/new-changelog.md
+            git log --first-parent --pretty=format:"- %s (%h)" $LATEST_TAG..main | grep -E "^- fix\(" >> /tmp/new-changelog.md
+            echo "" >> /tmp/new-changelog.md
+          fi
+
+          if git log --first-parent --pretty=format:"%s" $LATEST_TAG..main | grep -E "^improvement\(" > /dev/null; then
+            echo "" >> /tmp/new-changelog.md
+            echo "### Improvements" >> /tmp/new-changelog.md
+            echo "" >> /tmp/new-changelog.md
+            git log --first-parent --pretty=format:"- %s (%h)" $LATEST_TAG..main | grep -E "^- improvement\(" >> /tmp/new-changelog.md
+            echo "" >> /tmp/new-changelog.md
+          fi
+
+          if git log --first-parent --pretty=format:"%s" $LATEST_TAG..main | grep -E "^perf\(" > /dev/null; then
+            echo "" >> /tmp/new-changelog.md
+            echo "### Performance" >> /tmp/new-changelog.md
+            echo "" >> /tmp/new-changelog.md
+            git log --first-parent --pretty=format:"- %s (%h)" $LATEST_TAG..main | grep -E "^- perf\(" >> /tmp/new-changelog.md
+            echo "" >> /tmp/new-changelog.md
+          fi
+
+          if git log --first-parent --pretty=format:"%s" $LATEST_TAG..main | grep -E "^refactor\(" > /dev/null; then
+            echo "" >> /tmp/new-changelog.md
+            echo "### Refactoring" >> /tmp/new-changelog.md
+            echo "" >> /tmp/new-changelog.md
+            git log --first-parent --pretty=format:"- %s (%h)" $LATEST_TAG..main | grep -E "^- refactor\(" >> /tmp/new-changelog.md
+            echo "" >> /tmp/new-changelog.md
+          fi
+
+          if git log --first-parent --pretty=format:"%s" $LATEST_TAG..main | grep -E "^docs\(" > /dev/null; then
+            echo "" >> /tmp/new-changelog.md
+            echo "### Documentation" >> /tmp/new-changelog.md
+            echo "" >> /tmp/new-changelog.md
+            git log --first-parent --pretty=format:"- %s (%h)" $LATEST_TAG..main | grep -E "^- docs\(" >> /tmp/new-changelog.md
+            echo "" >> /tmp/new-changelog.md
+          fi
+
+          if git log --first-parent --pretty=format:"%s" $LATEST_TAG..main | grep -E "^test\(" > /dev/null; then
+            echo "" >> /tmp/new-changelog.md
+            echo "### Tests" >> /tmp/new-changelog.md
+            echo "" >> /tmp/new-changelog.md
+            git log --first-parent --pretty=format:"- %s (%h)" $LATEST_TAG..main | grep -E "^- test\(" >> /tmp/new-changelog.md
+            echo "" >> /tmp/new-changelog.md
+          fi
+
+          if git log --first-parent --pretty=format:"%s" $LATEST_TAG..main | grep -E "^(build|chore|ci|style|revert)\(" > /dev/null; then
+            echo "" >> /tmp/new-changelog.md
+            echo "### Maintenance" >> /tmp/new-changelog.md
+            echo "" >> /tmp/new-changelog.md
+            git log --first-parent --pretty=format:"- %s (%h)" $LATEST_TAG..main | grep -E "^- (build|chore|ci|style|revert)\(" >> /tmp/new-changelog.md
+            echo "" >> /tmp/new-changelog.md
+          fi
+
+          # Prepend to existing CHANGELOG.md if it exists
+          if [ -f CHANGELOG.md ]; then
+            cat CHANGELOG.md >> /tmp/new-changelog.md
+          fi
+
+          # Move the new changelog into place
+          mv /tmp/new-changelog.md CHANGELOG.md
+
+          # Copy for release notes (without the existing changelog)
+          echo "## $NEW_TAG ($(date +%Y-%m-%d))" > /tmp/release-notes.md
+          echo "" >> /tmp/release-notes.md
+
+          # Release notes grouped by type
+          if git log --first-parent --pretty=format:"%s" $LATEST_TAG..main | grep -E "^feat\(" > /dev/null; then
+            echo "### Features" >> /tmp/release-notes.md
+            echo "" >> /tmp/release-notes.md
+            git log --first-parent --pretty=format:"- %s (%h)" $LATEST_TAG..main | grep -E "^- feat\(" >> /tmp/release-notes.md
+            echo "" >> /tmp/release-notes.md
+          fi
+
+          if git log --first-parent --pretty=format:"%s" $LATEST_TAG..main | grep -E "^fix\(" > /dev/null; then
+            echo "### Bug Fixes" >> /tmp/release-notes.md
+            echo "" >> /tmp/release-notes.md
+            git log --first-parent --pretty=format:"- %s (%h)" $LATEST_TAG..main | grep -E "^- fix\(" >> /tmp/release-notes.md
+            echo "" >> /tmp/release-notes.md
+          fi
+
+          if git log --first-parent --pretty=format:"%s" $LATEST_TAG..main | grep -E "^improvement\(" > /dev/null; then
+            echo "### Improvements" >> /tmp/release-notes.md
+            echo "" >> /tmp/release-notes.md
+            git log --first-parent --pretty=format:"- %s (%h)" $LATEST_TAG..main | grep -E "^- improvement\(" >> /tmp/release-notes.md
+            echo "" >> /tmp/release-notes.md
+          fi
+
+          if git log --first-parent --pretty=format:"%s" $LATEST_TAG..main | grep -E "^perf\(" > /dev/null; then
+            echo "### Performance" >> /tmp/release-notes.md
+            echo "" >> /tmp/release-notes.md
+            git log --first-parent --pretty=format:"- %s (%h)" $LATEST_TAG..main | grep -E "^- perf\(" >> /tmp/release-notes.md
+            echo "" >> /tmp/release-notes.md
+          fi
+
+          if git log --first-parent --pretty=format:"%s" $LATEST_TAG..main | grep -E "^refactor\(" > /dev/null; then
+            echo "### Refactoring" >> /tmp/release-notes.md
+            echo "" >> /tmp/release-notes.md
+            git log --first-parent --pretty=format:"- %s (%h)" $LATEST_TAG..main | grep -E "^- refactor\(" >> /tmp/release-notes.md
+            echo "" >> /tmp/release-notes.md
+          fi
+
+          if git log --first-parent --pretty=format:"%s" $LATEST_TAG..main | grep -E "^docs\(" > /dev/null; then
+            echo "### Documentation" >> /tmp/release-notes.md
+            echo "" >> /tmp/release-notes.md
+            git log --first-parent --pretty=format:"- %s (%h)" $LATEST_TAG..main | grep -E "^- docs\(" >> /tmp/release-notes.md
+            echo "" >> /tmp/release-notes.md
+          fi
+
+          if git log --first-parent --pretty=format:"%s" $LATEST_TAG..main | grep -E "^test\(" > /dev/null; then
+            echo "### Tests" >> /tmp/release-notes.md
+            echo "" >> /tmp/release-notes.md
+            git log --first-parent --pretty=format:"- %s (%h)" $LATEST_TAG..main | grep -E "^- test\(" >> /tmp/release-notes.md
+            echo "" >> /tmp/release-notes.md
+          fi
+
+          if git log --first-parent --pretty=format:"%s" $LATEST_TAG..main | grep -E "^(build|chore|ci|style|revert)\(" > /dev/null; then
+            echo "### Maintenance" >> /tmp/release-notes.md
+            echo "" >> /tmp/release-notes.md
+            git log --first-parent --pretty=format:"- %s (%h)" $LATEST_TAG..main | grep -E "^- (build|chore|ci|style|revert)\(" >> /tmp/release-notes.md
+            echo "" >> /tmp/release-notes.md
+          fi
+
+      - name: Commit version bump and changelog
+        run: |
+          NEW_TAG="${{ steps.new_version.outputs.new_tag }}"
+
+          git config user.name "Bird Bot"
+          git config user.email "bird-buddy-bot@users.noreply.github.com"
+
+          git add package.json CHANGELOG.md
+          git commit -m "chore: release $NEW_TAG [skip ci]"
+          git push origin main
+
+      - name: Create Git Tag
+        run: |
+          NEW_TAG="${{ steps.new_version.outputs.new_tag }}"
+
+          git tag $NEW_TAG
+          git push origin $NEW_TAG
+
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.ORG_GITHUB_WRITE_TOKEN }}
+        run: |
+          NEW_TAG="${{ steps.new_version.outputs.new_tag }}"
+
+          gh release create $NEW_TAG \
+            --title "Release $NEW_TAG" \
+            --notes-file /tmp/release-notes.md
+
+      - name: Sync main to develop
+        run: |
+          echo "Syncing main branch back to develop..."
+          git fetch origin develop
+          git checkout develop
+
+          # Try fast-forward merge first (no merge commit if possible)
+          if git merge origin/main --ff-only 2>/dev/null; then
+            echo "Fast-forward merge successful (no merge commit created)"
+          else
+            echo "Fast-forward not possible, performing regular merge..."
+            git merge origin/main --no-edit
+          fi
+
+          git push origin develop
+          echo "Successfully synced main to develop"
