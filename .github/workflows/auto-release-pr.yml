@@ -42,28 +42,30 @@ jobs:
         id: analyze
         run: |
           LATEST_TAG="${{ steps.get_version.outputs.latest_tag }}"
-          
+
           echo "=== Debug Info ==="
           echo "Latest tag: $LATEST_TAG"
           echo "Current branch: $(git branch --show-current)"
           echo "=================="
-          
-          # Get commits since last release
+
+          # Get commits since last release (--first-parent to avoid duplicates from feature branches)
           if [ "$LATEST_TAG" = "v0.0.0" ]; then
-            COMMITS=$(git log --pretty=format:"%s" develop)
+            COMMITS=$(git log --first-parent --pretty=format:"%s" develop)
           else
-            COMMITS=$(git log --pretty=format:"%s" $LATEST_TAG..develop)
+            COMMITS=$(git log --first-parent --pretty=format:"%s" $LATEST_TAG..develop)
           fi
-          
+
           echo "Commits since last release:"
           echo "$COMMITS"
           echo "Number of commits: $(echo "$COMMITS" | wc -l)"
-          
-          # Check for breaking changes, features, and fixes
+
+          # Check for breaking changes, features, and other changes
+          # Commit types from commitlint: build, chore, ci, docs, feat, fix, improvement, perf, refactor, revert, style, test
           HAS_BREAKING=$(echo "$COMMITS" | grep -i "BREAKING CHANGE" || true)
-          HAS_FEAT=$(echo "$COMMITS" | grep "^feat" || true)
-          HAS_FIX=$(echo "$COMMITS" | grep "^fix" || true)
-          
+          HAS_FEAT=$(echo "$COMMITS" | grep -E "^feat\(" || true)
+          HAS_PATCH=$(echo "$COMMITS" | grep -E "^(fix|improvement|perf|refactor)\(" || true)
+          HAS_OTHER=$(echo "$COMMITS" | grep -E "^(build|chore|ci|docs|style|test|revert)\(" || true)
+
           # Determine version bump type
           if [ -n "$HAS_BREAKING" ]; then
             echo "bump_type=major" >> $GITHUB_OUTPUT
@@ -71,14 +73,17 @@ jobs:
           elif [ -n "$HAS_FEAT" ]; then
             echo "bump_type=minor" >> $GITHUB_OUTPUT
             echo "Version bump: MINOR (feature detected)"
-          elif [ -n "$HAS_FIX" ]; then
+          elif [ -n "$HAS_PATCH" ]; then
             echo "bump_type=patch" >> $GITHUB_OUTPUT
-            echo "Version bump: PATCH (fix detected)"
+            echo "Version bump: PATCH (fix, improvement, perf, or refactor detected)"
+          elif [ -n "$HAS_OTHER" ]; then
+            echo "bump_type=patch" >> $GITHUB_OUTPUT
+            echo "Version bump: PATCH (other conventional commit detected)"
           else
             echo "bump_type=none" >> $GITHUB_OUTPUT
             echo "Version bump: NONE (no conventional commits found)"
           fi
-          
+
           # Count commits
           COMMIT_COUNT=$(echo "$COMMITS" | wc -l | xargs)
           echo "commit_count=$COMMIT_COUNT" >> $GITHUB_OUTPUT
@@ -122,29 +127,66 @@ jobs:
           echo "" >> /tmp/pr-body.md
           echo "### Changes since $LATEST_TAG:" >> /tmp/pr-body.md
           echo "" >> /tmp/pr-body.md
-          
-          # Add commits grouped by type
-          if git log --pretty=format:"%s" $LATEST_TAG..develop | grep "^feat" > /dev/null; then
+
+          # Add commits grouped by type (--first-parent to avoid duplicates from feature branches)
+          # Commit types from commitlint: build, chore, ci, docs, feat, fix, improvement, perf, refactor, revert, style, test
+
+          if git log --first-parent --pretty=format:"%s" $LATEST_TAG..develop | grep -E "^feat\(" > /dev/null; then
             echo "" >> /tmp/pr-body.md
             echo "#### Features" >> /tmp/pr-body.md
-            git log --pretty=format:"- %s" $LATEST_TAG..develop | grep "^- feat" >> /tmp/pr-body.md
+            git log --first-parent --pretty=format:"- %s" $LATEST_TAG..develop | grep -E "^- feat\(" >> /tmp/pr-body.md
             echo "" >> /tmp/pr-body.md
           fi
-          
-          if git log --pretty=format:"%s" $LATEST_TAG..develop | grep "^fix" > /dev/null; then
+
+          if git log --first-parent --pretty=format:"%s" $LATEST_TAG..develop | grep -E "^fix\(" > /dev/null; then
             echo "" >> /tmp/pr-body.md
             echo "#### Bug Fixes" >> /tmp/pr-body.md
-            git log --pretty=format:"- %s" $LATEST_TAG..develop | grep "^- fix" >> /tmp/pr-body.md
+            git log --first-parent --pretty=format:"- %s" $LATEST_TAG..develop | grep -E "^- fix\(" >> /tmp/pr-body.md
             echo "" >> /tmp/pr-body.md
           fi
-          
-          if git log --pretty=format:"%s" $LATEST_TAG..develop | grep -E "^chore|^ci|^docs" > /dev/null; then
+
+          if git log --first-parent --pretty=format:"%s" $LATEST_TAG..develop | grep -E "^improvement\(" > /dev/null; then
             echo "" >> /tmp/pr-body.md
-            echo "#### Other Changes" >> /tmp/pr-body.md
-            git log --pretty=format:"- %s" $LATEST_TAG..develop | grep -E "^- chore|^- ci|^- docs" >> /tmp/pr-body.md
+            echo "#### Improvements" >> /tmp/pr-body.md
+            git log --first-parent --pretty=format:"- %s" $LATEST_TAG..develop | grep -E "^- improvement\(" >> /tmp/pr-body.md
             echo "" >> /tmp/pr-body.md
           fi
-          
+
+          if git log --first-parent --pretty=format:"%s" $LATEST_TAG..develop | grep -E "^perf\(" > /dev/null; then
+            echo "" >> /tmp/pr-body.md
+            echo "#### Performance" >> /tmp/pr-body.md
+            git log --first-parent --pretty=format:"- %s" $LATEST_TAG..develop | grep -E "^- perf\(" >> /tmp/pr-body.md
+            echo "" >> /tmp/pr-body.md
+          fi
+
+          if git log --first-parent --pretty=format:"%s" $LATEST_TAG..develop | grep -E "^refactor\(" > /dev/null; then
+            echo "" >> /tmp/pr-body.md
+            echo "#### Refactoring" >> /tmp/pr-body.md
+            git log --first-parent --pretty=format:"- %s" $LATEST_TAG..develop | grep -E "^- refactor\(" >> /tmp/pr-body.md
+            echo "" >> /tmp/pr-body.md
+          fi
+
+          if git log --first-parent --pretty=format:"%s" $LATEST_TAG..develop | grep -E "^docs\(" > /dev/null; then
+            echo "" >> /tmp/pr-body.md
+            echo "#### Documentation" >> /tmp/pr-body.md
+            git log --first-parent --pretty=format:"- %s" $LATEST_TAG..develop | grep -E "^- docs\(" >> /tmp/pr-body.md
+            echo "" >> /tmp/pr-body.md
+          fi
+
+          if git log --first-parent --pretty=format:"%s" $LATEST_TAG..develop | grep -E "^test\(" > /dev/null; then
+            echo "" >> /tmp/pr-body.md
+            echo "#### Tests" >> /tmp/pr-body.md
+            git log --first-parent --pretty=format:"- %s" $LATEST_TAG..develop | grep -E "^- test\(" >> /tmp/pr-body.md
+            echo "" >> /tmp/pr-body.md
+          fi
+
+          if git log --first-parent --pretty=format:"%s" $LATEST_TAG..develop | grep -E "^(build|chore|ci|style|revert)\(" > /dev/null; then
+            echo "" >> /tmp/pr-body.md
+            echo "#### Maintenance" >> /tmp/pr-body.md
+            git log --first-parent --pretty=format:"- %s" $LATEST_TAG..develop | grep -E "^- (build|chore|ci|style|revert)\(" >> /tmp/pr-body.md
+            echo "" >> /tmp/pr-body.md
+          fi
+
           # Check if PR exists, create or update
           if [ "${{ steps.check_pr.outputs.pr_exists }}" = "0" ]; then
             echo "Creating new PR..."
@@ -156,11 +198,13 @@ jobs:
             
             # Try to add label if it exists (non-blocking)
             PR_NUMBER=$(gh pr list --base main --head develop --state open --json number --jq '.[0].number')
-            gh pr edit $PR_NUMBER --add-label "release" 2>/dev/null || echo "Label 'release' not found, skipping..."
+            gh api repos/${{ github.repository }}/issues/$PR_NUMBER/labels --method POST -f "labels[]=release" 2>/dev/null || echo "Label 'release' not found, skipping..."
           else
             echo "Updating existing PR..."
             PR_NUMBER=$(gh pr list --base main --head develop --state open --json number --jq '.[0].number')
-            gh pr edit $PR_NUMBER \
-              --title "Release $NEW_VERSION" \
-              --body-file /tmp/pr-body.md
+            # Use REST API instead of gh pr edit to avoid read:org requirement
+            gh api repos/${{ github.repository }}/pulls/$PR_NUMBER \
+              --method PATCH \
+              -f title="Release $NEW_VERSION" \
+              -f body="$(cat /tmp/pr-body.md)"
           fi
