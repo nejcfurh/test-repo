@@ -1,5 +1,14 @@
 # Changelog
 
+## v2.6.6 (2025-12-12)
+
+
+### Maintenance
+
+- chore(main): release 2.8.0 (#175) (e986977)
+
+# Changelog
+
 ## [2.8.0](https://github.com/nejcfurh/test-repo/compare/v2.7.0...v2.8.0) (2025-12-12)
 
 
