@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.6.5 (2025-12-12)
+
+# Changelog
+
 ## v2.6.4 (2025-12-12)
 
 # Changelog
