@@ -28,7 +28,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {children}{' '}
-        TEchasdsadadsadasdasdasadsdadsasadasdadddadasasdasdasdsadasdadadsadadadasdsadsadadadassadasassdadadasdas
+        TEchasdsadadsadasdasdasadsdadsasadasdadddadasasdasdasdsadasdadadsadadadasdsadsadadadassadasassdadadasdassdadasdsada
       </body>
     </html>
   );
